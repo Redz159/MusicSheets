@@ -194,11 +194,28 @@ class _FlyoutState<T> extends State<_Flyout<T>> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Tooltip(message: widget.tooltip, child: _tappable(widget.selected, true, () => setState(() => _open = !_open))),
-        AnimatedRotation(
-          turns: _open ? 0.5 : 0,
-          duration: const Duration(milliseconds: 200),
-          child: Icon(Icons.chevron_right, size: 16, color: muted),
+        // The current choice and the arrow form one tap target.
+        Tooltip(
+          message: widget.tooltip,
+          child: InkWell(
+            onTap: () => setState(() => _open = !_open),
+            customBorder: const StadiumBorder(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                widget.itemBuilder(widget.selected, true),
+                SizedBox(
+                  width: 22,
+                  height: 42,
+                  child: AnimatedRotation(
+                    turns: _open ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(Icons.chevron_right, size: 18, color: muted),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         AnimatedSize(
           duration: const Duration(milliseconds: 220),
