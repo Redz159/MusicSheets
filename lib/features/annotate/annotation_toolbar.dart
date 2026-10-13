@@ -31,90 +31,114 @@ class AnnotationToolbar extends StatelessWidget {
         final colors = tools.usesHighlightPalette ? highlightColors : penColors;
         final showColors = tools.tool != AnnoTool.eraser;
         final showWidths = tools.tool != AnnoTool.eraser;
-        return Column(mainAxisSize: MainAxisSize.min, children: [
-          _Panel(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                for (final t in AnnoTool.values)
-                  _ToolButton(
-                    icon: t.icon,
-                    tooltip: t.label,
-                    selected: tools.tool == t,
-                    onTap: () => tools.tool = t,
-                  ),
-                const _Sep(),
-                if (showColors)
-                  for (final c in colors)
-                    GestureDetector(
-                      onTap: () => tools.color = c,
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        decoration: BoxDecoration(
-                          color: Color(c).withValues(alpha: 1),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: tools.color == c ? scheme.primary : scheme.outlineVariant,
-                            width: tools.color == c ? 3 : 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                if (showWidths) ...[
-                  const _Sep(),
-                  for (var i = 0; i < 3; i++)
-                    _ToolButton(
-                      tooltip: ['Thin', 'Medium', 'Thick'][i],
-                      selected: tools.widthIndex == i,
-                      onTap: () => tools.widthIndex = i,
-                      child: Container(
-                        width: 18,
-                        height: 3.0 + i * 3,
-                        decoration: BoxDecoration(color: scheme.onSurface, borderRadius: BorderRadius.circular(4)),
-                      ),
-                    ),
-                ],
-                const _Sep(),
-                _ToolButton(icon: Icons.undo, tooltip: 'Undo', onTap: store.canUndo ? store.undo : null),
-                _ToolButton(icon: Icons.redo, tooltip: 'Redo', onTap: store.canRedo ? store.redo : null),
-                _ToolButton(icon: Icons.delete_sweep_outlined, tooltip: 'Clear page', onTap: onClearPage),
-                _ToolButton(
-                  icon: stylusOnly ? Icons.draw : Icons.touch_app_outlined,
-                  tooltip: stylusOnly ? 'Stylus only (fingers turn pages)' : 'Draw with finger & stylus',
-                  selected: stylusOnly,
-                  onTap: () => onStylusOnly(!stylusOnly),
-                ),
-                const SizedBox(width: 4),
-                FilledButton(onPressed: onDone, child: const Text('Done')),
-                const SizedBox(width: 4),
-              ]),
-            ),
-          ),
-          if (tools.tool == AnnoTool.stamp) ...[
-            const SizedBox(height: 8),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             _Panel(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(children: [
-                  for (final s in stamps)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: ChoiceChip(
-                        label: Text(s,
-                            style: const TextStyle(
-                                fontFamily: 'serif', fontStyle: FontStyle.italic, fontWeight: FontWeight.bold)),
-                        selected: tools.stamp == s,
-                        showCheckmark: false,
-                        onSelected: (_) => tools.stamp = s,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final t in AnnoTool.values)
+                            _ToolButton(
+                              icon: t.icon,
+                              tooltip: t.label,
+                              selected: tools.tool == t,
+                              onTap: () => tools.tool = t,
+                            ),
+                          const _Sep(),
+                          if (showColors)
+                            for (final c in colors)
+                              GestureDetector(
+                                onTap: () => tools.color = c,
+                                child: Container(
+                                  width: 28,
+                                  height: 28,
+                                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                                  decoration: BoxDecoration(
+                                    color: Color(c).withValues(alpha: 1),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: tools.color == c ? scheme.primary : scheme.outlineVariant,
+                                      width: tools.color == c ? 3 : 1,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          if (showWidths) ...[
+                            const _Sep(),
+                            for (var i = 0; i < 3; i++)
+                              _ToolButton(
+                                tooltip: ['Thin', 'Medium', 'Thick'][i],
+                                selected: tools.widthIndex == i,
+                                onTap: () => tools.widthIndex = i,
+                                child: Container(
+                                  width: 18,
+                                  height: 3.0 + i * 3,
+                                  decoration: BoxDecoration(
+                                    color: scheme.onSurface,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                          ],
+                          const _Sep(),
+                          _ToolButton(icon: Icons.undo, tooltip: 'Undo', onTap: store.canUndo ? store.undo : null),
+                          _ToolButton(icon: Icons.redo, tooltip: 'Redo', onTap: store.canRedo ? store.redo : null),
+                          _ToolButton(icon: Icons.delete_sweep_outlined, tooltip: 'Clear page', onTap: onClearPage),
+                          _ToolButton(
+                            icon: stylusOnly ? Icons.draw : Icons.touch_app_outlined,
+                            tooltip: stylusOnly ? 'Stylus only (fingers turn pages)' : 'Draw with finger & stylus',
+                            selected: stylusOnly,
+                            onTap: () => onStylusOnly(!stylusOnly),
+                          ),
+                        ],
                       ),
                     ),
-                ]),
+                  ),
+                  // Pinned outside the scrolling tools so it is always reachable.
+                  const _Sep(),
+                  FilledButton.icon(onPressed: onDone, icon: const Icon(Icons.check), label: const Text('Done')),
+                  const SizedBox(width: 4),
+                ],
               ),
             ),
+            if (tools.tool == AnnoTool.stamp) ...[
+              const SizedBox(height: 8),
+              _Panel(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final s in stamps)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: ChoiceChip(
+                            label: Text(
+                              s,
+                              style: const TextStyle(
+                                fontFamily: 'serif',
+                                fontStyle: FontStyle.italic,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            selected: tools.stamp == s,
+                            showCheckmark: false,
+                            onSelected: (_) => tools.stamp = s,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
-        ]);
+        );
       },
     );
   }
@@ -141,11 +165,11 @@ class _Sep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 1,
-        height: 28,
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        color: Theme.of(context).colorScheme.outlineVariant,
-      );
+    width: 1,
+    height: 28,
+    margin: const EdgeInsets.symmetric(horizontal: 8),
+    color: Theme.of(context).colorScheme.outlineVariant,
+  );
 }
 
 class _ToolButton extends StatelessWidget {
@@ -174,14 +198,17 @@ class _ToolButton extends StatelessWidget {
             color: selected ? scheme.primaryContainer : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: child ??
-              Icon(icon,
-                  size: 22,
-                  color: onTap == null
-                      ? scheme.onSurface.withValues(alpha: 0.3)
-                      : selected
-                          ? scheme.onPrimaryContainer
-                          : scheme.onSurface),
+          child:
+              child ??
+              Icon(
+                icon,
+                size: 22,
+                color: onTap == null
+                    ? scheme.onSurface.withValues(alpha: 0.3)
+                    : selected
+                    ? scheme.onPrimaryContainer
+                    : scheme.onSurface,
+              ),
         ),
       ),
     );
