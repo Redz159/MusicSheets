@@ -22,6 +22,10 @@ enum AnnoTool {
   }
 
   bool get isShape => this == line || this == rect || this == oval;
+
+  /// Shapes, text and symbols share one fold-out button in the toolbar.
+  static const inserts = [line, rect, oval, text, stamp];
+  bool get isInsert => inserts.contains(this);
 }
 
 /// The classic eraser glyph: a tilted block with a filled tip, resting on a line.
@@ -107,7 +111,14 @@ class ToolState extends ChangeNotifier {
   String _stamp = 'mf';
 
   AnnoTool get tool => _tool;
-  set tool(AnnoTool t) => _set(() => _tool = t);
+  set tool(AnnoTool t) => _set(() {
+    _tool = t;
+    if (t.isInsert) _lastInsert = t;
+  });
+
+  /// The insert tool shown on the shared shapes/text/symbols button.
+  AnnoTool get lastInsert => _lastInsert;
+  AnnoTool _lastInsert = AnnoTool.line;
 
   bool get usesHighlightPalette => _tool == AnnoTool.highlighter;
 
@@ -138,7 +149,7 @@ class ToolState extends ChangeNotifier {
   String get stamp => _stamp;
   set stamp(String s) => _set(() {
     _stamp = s;
-    _tool = AnnoTool.stamp;
+    _tool = _lastInsert = AnnoTool.stamp;
   });
 
   void _set(VoidCallback f) {

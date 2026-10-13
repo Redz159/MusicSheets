@@ -45,12 +45,27 @@ class AnnotationToolbar extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           for (final t in AnnoTool.values)
-                            _ToolButton(
-                              tool: t,
-                              tooltip: t.label,
-                              selected: tools.tool == t,
-                              onTap: () => tools.tool = t,
-                            ),
+                            if (!t.isInsert)
+                              _ToolButton(
+                                tool: t,
+                                tooltip: t.label,
+                                selected: tools.tool == t,
+                                onTap: () => tools.tool = t,
+                              ),
+                          _Flyout<AnnoTool>(
+                            tooltip: 'Shapes, text & symbols',
+                            options: AnnoTool.inserts,
+                            selected: tools.lastInsert,
+                            onSelected: (t) => tools.tool = t,
+                            // Tapping the shown tool picks it; once it is active, tapping folds out the others.
+                            onTapCurrent: (t) {
+                              if (tools.tool == t) return false;
+                              tools.tool = t;
+                              return true;
+                            },
+                            itemBuilder: (t, _) =>
+                                _ToolButton(tool: t, tooltip: t.label, selected: tools.tool == t, enabled: true),
+                          ),
                           const _Sep(),
                           if (showColors)
                             _Flyout<int>(
@@ -166,6 +181,7 @@ class _Flyout<T> extends StatefulWidget {
     required this.selected,
     required this.onSelected,
     required this.itemBuilder,
+    this.onTapCurrent,
   });
 
   final String tooltip;
@@ -173,6 +189,10 @@ class _Flyout<T> extends StatefulWidget {
   final T selected;
   final ValueChanged<T> onSelected;
   final Widget Function(T value, bool selected) itemBuilder;
+
+  /// Called when the shown choice (not the arrow) is tapped; return true if that
+  /// tap was handled and the options should not fold out.
+  final bool Function(T value)? onTapCurrent;
 
   @override
   State<_Flyout<T>> createState() => _FlyoutState<T>();
@@ -198,19 +218,27 @@ class _FlyoutState<T> extends State<_Flyout<T>> {
         Tooltip(
           message: widget.tooltip,
           child: InkWell(
-            onTap: () => setState(() => _open = !_open),
+            onTap: () {
+              if (widget.onTapCurrent?.call(widget.selected) ?? false) return;
+              setState(() => _open = !_open);
+            },
             customBorder: const StadiumBorder(),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 widget.itemBuilder(widget.selected, true),
-                SizedBox(
-                  width: 22,
-                  height: 42,
-                  child: AnimatedRotation(
-                    turns: _open ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(Icons.chevron_right, size: 18, color: muted),
+                // The arrow always folds in/out.
+                InkWell(
+                  onTap: () => setState(() => _open = !_open),
+                  customBorder: const StadiumBorder(),
+                  child: SizedBox(
+                    width: 22,
+                    height: 42,
+                    child: AnimatedRotation(
+                      turns: _open ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(Icons.chevron_right, size: 18, color: muted),
+                    ),
                   ),
                 ),
               ],
@@ -268,7 +296,10 @@ class _Sep extends StatelessWidget {
 }
 
 class _ToolButton extends StatelessWidget {
-  const _ToolButton({this.icon, this.tool, required this.tooltip, this.selected = false, this.onTap});
+  const _ToolButton({this.icon, this.tool, required this.tooltip, this.selected = false, this.onTap, this.enabled});
+
+  /// Defaults to `onTap != null`; set to true for a button whose tap a parent handles.
+  final bool? enabled;
 
   final IconData? icon;
 
@@ -281,7 +312,7 @@ class _ToolButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final color = onTap == null
+    final color = !(enabled ?? onTap != null)
         ? scheme.onSurface.withValues(alpha: 0.3)
         : selected
         ? scheme.onPrimaryContainer
