@@ -86,9 +86,11 @@ class ImportService {
   }
 
   Future<void> deleteSongs(List<Song> songs) async {
-    await db.deleteSongs([for (final s in songs) s.id]);
-    for (final s in songs) {
-      final f = File(paths.pdf(s.fileName));
+    final ids = [for (final s in songs) s.id];
+    final clips = await db.audioClipsForSongs(ids);
+    await db.deleteSongs(ids); // clip rows go with them (cascade)
+    for (final name in [for (final s in songs) s.fileName, for (final c in clips) c.fileName]) {
+      final f = File(paths.pdf(name));
       if (f.existsSync()) await f.delete();
     }
   }

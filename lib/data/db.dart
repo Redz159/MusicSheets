@@ -80,23 +80,45 @@ class Annotations extends Table {
   Set<Column> get primaryKey => {songId, page};
 }
 
+/// A recording attached to a song: either the whole song, or a part marked by a
+/// rectangle on one page (normalized 0..1 page coordinates).
+class AudioClips extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get songId => integer().references(Songs, #id, onDelete: KeyAction.cascade)();
+  TextColumn get title => text()();
+
+  /// File name relative to the library directory.
+  TextColumn get fileName => text()();
+
+  /// Null when the clip is for the whole song.
+  IntColumn get page => integer().nullable()();
+  RealColumn get left => real().nullable()();
+  RealColumn get top => real().nullable()();
+  RealColumn get right => real().nullable()();
+  RealColumn get bottom => real().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+}
+
 class SetlistEntry {
   SetlistEntry(this.item, this.song);
   final SetlistItem item;
   final Song song;
 }
 
-@DriftDatabase(tables: [Songs, Folders, FolderSongs, Tags, SongTags, Setlists, SetlistItems, Annotations])
+@DriftDatabase(tables: [Songs, Folders, FolderSongs, Tags, SongTags, Setlists, SetlistItems, Annotations, AudioClips])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   static AppDatabase open(String dbPath) => AppDatabase(NativeDatabase.createInBackground(File(dbPath)));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+        onUpgrade: (m, from, to) async {
+          if (from < 2) await m.createTable(audioClips);
+        },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');
         },
@@ -297,6 +319,28 @@ class AppDatabase extends _$AppDatabase {
     final q = selectOnly(annotations, distinct: true)..addColumns([annotations.songId]);
     return {for (final r in await q.get()) r.read(annotations.songId)!};
   }
+
+  // ---------------------------------------------------------------- Audio clips
+
+  /// Clips of the given songs, whole-song clips first, then by page and position.
+  Stream<List<AudioClip>> watchAudioClips(List<int> songIds) => (select(audioClips)
+        ..where((c) => c.songId.isIn(songIds))
+        ..orderBy([
+          (c) => OrderingTerm(expression: c.page, nulls: NullsOrder.first),
+          (c) => OrderingTerm(expression: c.top),
+          (c) => OrderingTerm(expression: c.createdAt),
+        ]))
+      .watch();
+
+  Future<List<AudioClip>> audioClipsForSongs(List<int> songIds) =>
+      (select(audioClips)..where((c) => c.songId.isIn(songIds))).get();
+
+  Future<int> insertAudioClip(AudioClipsCompanion clip) => into(audioClips).insert(clip);
+
+  Future<void> updateAudioClip(int id, AudioClipsCompanion changes) =>
+      (update(audioClips)..where((c) => c.id.equals(id))).write(changes);
+
+  Future<void> deleteAudioClip(int id) => (delete(audioClips)..where((c) => c.id.equals(id))).go();
 
   /// Writes a consistent copy of the database to [path] (used for backups).
   Future<void> exportTo(String path) async {

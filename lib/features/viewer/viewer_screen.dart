@@ -20,6 +20,8 @@ import '../annotate/annotation_layer.dart';
 import '../annotate/annotation_store.dart';
 import '../annotate/annotation_toolbar.dart';
 import '../annotate/tool_state.dart';
+import '../audio/audio_panel.dart';
+import '../audio/audio_playback.dart';
 import '../metronome/metronome.dart';
 import '../metronome/metronome_panel.dart';
 
@@ -80,6 +82,17 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
   double _renderZoom = 1;
   late final _metronome = Metronome(ref.read(sharedPrefsProvider));
   bool _metronomeOpen = false;
+
+  // Recordings: whole-song or part clips; parts are marked as rectangles on a page.
+  final _audio = AudioPlayback();
+  List<AudioClip> _clips = const [];
+  StreamSubscription<List<AudioClip>>? _clipSub;
+  bool _audioOpen = false;
+  AudioClip? _marking;
+  ({int flat, Rect rect})? _markRect;
+
+  /// Page turning and zoom gestures are off while drawing or marking a part.
+  bool get _locked => _annotating || _marking != null;
   double _slotWidth = 0;
 
   // Annotate mode: one finger / the pen draws, two fingers zoom and pan.
@@ -124,6 +137,10 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     ]);
     if (!mounted) return;
     setState(() => _songs = songs);
+    _clipSub = _db.watchAudioClips([for (final s in songs) s.id]).listen((clips) {
+      _audio.refresh(clips);
+      if (mounted) setState(() => _clips = clips);
+    });
   }
 
   @override
@@ -142,6 +159,8 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     _scrubber.dispose();
     _tools.dispose();
     _metronome.dispose();
+    _clipSub?.cancel();
+    _audio.dispose();
     super.dispose();
   }
 
@@ -369,6 +388,10 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       swap ? _next() : _prev();
       return KeyEventResult.handled;
     }
+    if (k == LogicalKeyboardKey.escape && _marking != null) {
+      _endMarking();
+      return KeyEventResult.handled;
+    }
     if (k == LogicalKeyboardKey.escape && _annotating) {
       _setAnnotating(false);
       return KeyEventResult.handled;
@@ -429,9 +452,14 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     final pageInSong = _flat[_currentFlat].page;
 
     return PopScope(
-      canPop: !_annotating,
+      canPop: !_locked,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _setAnnotating(false);
+        if (didPop) return;
+        if (_marking != null) {
+          _endMarking();
+        } else {
+          _setAnnotating(false);
+        }
       },
       child: Scaffold(
         key: _scaffoldKey,
@@ -448,11 +476,11 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   // No double-tap handler on purpose: it would delay every single tap.
-                  onTapUp: _annotating ? null : (d) => _handleTap(d.globalPosition),
+                  onTapUp: _locked ? null : (d) => _handleTap(d.globalPosition),
                   child: PageView.builder(
                     key: ValueKey(_spread),
                     controller: _pc,
-                    physics: _annotating || _zoomed ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
+                    physics: _locked || _zoomed ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
                     itemCount: _units.length,
                     onPageChanged: _onPageChanged,
                     itemBuilder: (context, u) => _buildUnit(u, settings),
@@ -515,6 +543,43 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                         : const SizedBox.shrink(),
                   ),
                 ),
+              if (_audioOpen && _marking == null)
+                Positioned(
+                  top: MediaQuery.paddingOf(context).top + 72,
+                  right: 12,
+                  width: math.min(400, size.width - 24),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: size.height - MediaQuery.paddingOf(context).top - 96),
+                    child: AudioPanel(
+                      playback: _audio,
+                      clips: [
+                        for (final c in _clips)
+                          if (c.songId == current.id) c,
+                      ],
+                      onAdd: () => _addAudio(current),
+                      onPlay: _playClip,
+                      onMarkPart: _startMarking,
+                      onWholeSong: (c) => setClipArea(_db, c, null),
+                      onRename: _renameClip,
+                      onDelete: _deleteClip,
+                      onClose: () => setState(() => _audioOpen = false),
+                    ),
+                  ),
+                )
+              else
+                ListenableBuilder(
+                  listenable: _audio,
+                  builder: (context, _) => AnimatedPositioned(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    left: 12,
+                    bottom: MediaQuery.paddingOf(context).bottom + (_chrome ? 136 : 16),
+                    child: _marking == null
+                        ? AudioPill(playback: _audio, onOpen: () => setState(() => _audioOpen = true))
+                        : const SizedBox.shrink(),
+                  ),
+                ),
+              if (_marking != null) _markingBanner(),
               if (_annotating)
                 Positioned(
                   left: 12,
@@ -580,8 +645,8 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
         minScale: 1,
         maxScale: 5,
         // While annotating, zoom/pan is driven by [_annoPointerMove] instead.
-        scaleEnabled: isCurrent && !_annotating,
-        panEnabled: isCurrent && _zoomed && !_annotating,
+        scaleEnabled: isCurrent && !_locked,
+        panEnabled: isCurrent && _zoomed && !_locked,
         onInteractionEnd: (_) => _syncZoom(),
         child: Padding(padding: const EdgeInsets.all(6), child: child),
       ),
@@ -686,10 +751,163 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                     // When zoomed, a finger pans instead of turning the page.
                     onFingerSwipe: _zoomed ? null : (d) => d > 0 ? _next() : _prev(),
                   ),
+                  if (_marking != null && _units[_unit].contains(flat))
+                    AreaSelector(
+                      rect: _markRect?.flat == flat ? _markRect!.rect : null,
+                      onChanged: (r) => setState(() => _markRect = (flat: flat, rect: r)),
+                    )
+                  else if (!_annotating)
+                    ClipAreasLayer(
+                      clips: [
+                        for (final c in _clips)
+                          if (c.songId == song.id && c.area?.page == ref0.page) c,
+                      ],
+                      playback: _audio,
+                      showAll: _audioOpen,
+                      onPlay: _playClip,
+                    ),
                 ],
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------ recordings
+
+  Future<void> _playClip(AudioClip c) async {
+    final a = c.area;
+    // Starting a part shows its page.
+    if (a != null && _audio.clip?.id != c.id) {
+      final songIndex = _songs!.indexWhere((s) => s.id == c.songId);
+      if (songIndex >= 0) {
+        final flat = _offsets[songIndex] + a.page;
+        if (flat < _flat.length && !_units[_unit].contains(flat)) _goToFlat(flat);
+      }
+    }
+    try {
+      await _audio.play(c, _paths.pdf(c.fileName));
+    } catch (_) {
+      if (mounted) showSnack(context, 'Could not play “${c.title}”');
+    }
+  }
+
+  Future<void> _addAudio(Song song) async {
+    final AudioClip? clip;
+    try {
+      clip = await pickAndAddAudio(_db, _paths, song.id);
+    } catch (_) {
+      if (mounted) showSnack(context, 'Could not add this audio file');
+      return;
+    }
+    if (clip == null || !mounted) return;
+    final part = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('“${clip!.title}” added'),
+        content: const Text('Is this recording for the whole song or for a part of it?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Whole song')),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.highlight_alt),
+            label: const Text('Mark a part'),
+          ),
+        ],
+      ),
+    );
+    if (part == true) _startMarking(clip);
+  }
+
+  void _startMarking(AudioClip clip) {
+    final a = clip.area;
+    ({int flat, Rect rect})? initial;
+    if (a != null) {
+      final songIndex = _songs!.indexWhere((s) => s.id == clip.songId);
+      final flat = songIndex < 0 ? -1 : _offsets[songIndex] + a.page;
+      if (flat >= 0 && flat < _flat.length) {
+        if (!_units[_unit].contains(flat)) _goToFlat(flat);
+        initial = (flat: flat, rect: Rect.fromLTRB(a.left, a.top, a.right, a.bottom));
+      }
+    }
+    _transform.value = Matrix4.identity();
+    setState(() {
+      _marking = clip;
+      _markRect = initial;
+      _chrome = false;
+      _half = false;
+      _zoomed = false;
+    });
+  }
+
+  void _endMarking() => setState(() {
+    _marking = null;
+    _markRect = null;
+  });
+
+  Future<void> _saveMarking() async {
+    final clip = _marking, sel = _markRect;
+    if (clip == null || sel == null) return;
+    final page = _flat[sel.flat];
+    final song = _songs![page.song];
+    if (song.id != clip.songId) {
+      showSnack(context, 'Mark the part on a page of “${song.title}”');
+      return;
+    }
+    final r = sel.rect;
+    await setClipArea(_db, clip, page.page, l: r.left, t: r.top, r: r.right, b: r.bottom);
+    if (!mounted) return;
+    _endMarking();
+    setState(() => _audioOpen = true);
+  }
+
+  Future<void> _renameClip(AudioClip c) async {
+    final name = await promptText(context, title: 'Rename recording', initial: c.title);
+    if (name == null || name.trim().isEmpty) return;
+    await _db.updateAudioClip(c.id, AudioClipsCompanion(title: Value(name.trim())));
+  }
+
+  Future<void> _deleteClip(AudioClip c) async {
+    final ok = await confirm(context, title: 'Delete “${c.title}”?', message: 'The audio file is removed from the app.');
+    if (ok) await deleteAudioClip(_db, _paths, c);
+  }
+
+  Widget _markingBanner() {
+    final scheme = Theme.of(context).colorScheme;
+    final sel = _markRect?.rect;
+    final valid = sel != null && sel.width > 0.02 && sel.height > 0.01;
+    return Positioned(
+      top: MediaQuery.paddingOf(context).top + 12,
+      left: 12,
+      right: 12,
+      child: Center(
+        child: Material(
+          elevation: 6,
+          shadowColor: Colors.black54,
+          color: scheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(28),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 6, 6, 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.highlight_alt, color: scheme.primary),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    'Drag over the part for “${_marking!.title}”',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(onPressed: _endMarking, child: const Text('Cancel')),
+                FilledButton(onPressed: valid ? _saveMarking : null, child: const Text('Save')),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -746,6 +964,16 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'Recordings',
+                  isSelected: _audioOpen,
+                  icon: const Icon(Icons.play_circle_outline),
+                  selectedIcon: const Icon(Icons.play_circle),
+                  onPressed: () => setState(() {
+                    _audioOpen = !_audioOpen;
+                    _metronomeOpen = false;
+                  }),
+                ),
+                IconButton(
                   tooltip: 'Annotate',
                   icon: const Icon(Icons.draw_outlined),
                   onPressed: () => _setAnnotating(true),
@@ -754,7 +982,10 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                   tooltip: 'Metronome',
                   isSelected: _metronomeOpen,
                   icon: const MetronomeIcon(),
-                  onPressed: () => setState(() => _metronomeOpen = !_metronomeOpen),
+                  onPressed: () => setState(() {
+                    _metronomeOpen = !_metronomeOpen;
+                    _audioOpen = false;
+                  }),
                 ),
                 PopupMenuButton<String>(
                   tooltip: 'View options',

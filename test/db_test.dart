@@ -3,6 +3,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:music_sheets/data/db.dart';
 import 'package:music_sheets/features/annotate/annotation_model.dart';
+import 'package:music_sheets/features/audio/audio_playback.dart';
 
 void main() {
   late AppDatabase db;
@@ -63,6 +64,30 @@ void main() {
     expect((await db.annotationsForSong(a)).keys, [1]);
     await db.saveAnnotation(a, 1, null);
     expect(await db.annotationsForSong(a), isEmpty);
+  });
+
+  test('audio clips: whole song first, parts by page; areas can be set and cleared', () async {
+    final a = await addSong('A');
+    Future<int> clip(String title) =>
+        db.insertAudioClip(AudioClipsCompanion.insert(songId: a, title: title, fileName: '$title.mp3', createdAt: DateTime.now()));
+    final whole = await clip('Full take');
+    final part = await clip('Solo');
+    final intro = await clip('Intro');
+    final byId = {for (final c in await db.audioClipsForSongs([a])) c.id: c};
+    await setClipArea(db, byId[part]!, 1, l: 0.1, t: 0.5, r: 0.9, b: 0.7);
+    await setClipArea(db, byId[intro]!, 0, l: 0.1, t: 0.2, r: 0.9, b: 0.3);
+
+    var clips = await db.watchAudioClips([a]).first;
+    expect(clips.map((c) => c.id), [whole, intro, part]);
+    expect(clips.first.area, isNull);
+    expect(clips.last.area, (page: 1, left: 0.1, top: 0.5, right: 0.9, bottom: 0.7));
+
+    await setClipArea(db, clips.last, null); // back to whole song
+    clips = await db.watchAudioClips([a]).first;
+    expect(clips.where((c) => c.area == null).length, 2);
+
+    await db.deleteSongs([a]);
+    expect(await db.audioClipsForSongs([a]), isEmpty);
   });
 
   test('duplicate detection by hash', () async {

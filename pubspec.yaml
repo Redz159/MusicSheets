@@ -53,6 +53,7 @@ dependencies:
   animations: ^2.2.0
   shared_preferences: ^2.5.5
   flutter_soloud: ^3.5.4
+  just_audio: ^0.10.6
 
 dev_dependencies:
   flutter_test:

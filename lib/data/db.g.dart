@@ -2697,6 +2697,596 @@ class AnnotationsCompanion extends UpdateCompanion<Annotation> {
   }
 }
 
+class $AudioClipsTable extends AudioClips
+    with TableInfo<$AudioClipsTable, AudioClip> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AudioClipsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _songIdMeta = const VerificationMeta('songId');
+  @override
+  late final GeneratedColumn<int> songId = GeneratedColumn<int>(
+    'song_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES songs (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pageMeta = const VerificationMeta('page');
+  @override
+  late final GeneratedColumn<int> page = GeneratedColumn<int>(
+    'page',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _leftMeta = const VerificationMeta('left');
+  @override
+  late final GeneratedColumn<double> left = GeneratedColumn<double>(
+    'left',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _topMeta = const VerificationMeta('top');
+  @override
+  late final GeneratedColumn<double> top = GeneratedColumn<double>(
+    'top',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rightMeta = const VerificationMeta('right');
+  @override
+  late final GeneratedColumn<double> right = GeneratedColumn<double>(
+    'right',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bottomMeta = const VerificationMeta('bottom');
+  @override
+  late final GeneratedColumn<double> bottom = GeneratedColumn<double>(
+    'bottom',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    songId,
+    title,
+    fileName,
+    page,
+    left,
+    top,
+    right,
+    bottom,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'audio_clips';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AudioClip> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('song_id')) {
+      context.handle(
+        _songIdMeta,
+        songId.isAcceptableOrUnknown(data['song_id']!, _songIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_songIdMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('page')) {
+      context.handle(
+        _pageMeta,
+        page.isAcceptableOrUnknown(data['page']!, _pageMeta),
+      );
+    }
+    if (data.containsKey('left')) {
+      context.handle(
+        _leftMeta,
+        left.isAcceptableOrUnknown(data['left']!, _leftMeta),
+      );
+    }
+    if (data.containsKey('top')) {
+      context.handle(
+        _topMeta,
+        top.isAcceptableOrUnknown(data['top']!, _topMeta),
+      );
+    }
+    if (data.containsKey('right')) {
+      context.handle(
+        _rightMeta,
+        right.isAcceptableOrUnknown(data['right']!, _rightMeta),
+      );
+    }
+    if (data.containsKey('bottom')) {
+      context.handle(
+        _bottomMeta,
+        bottom.isAcceptableOrUnknown(data['bottom']!, _bottomMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AudioClip map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AudioClip(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      songId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}song_id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_name'],
+      )!,
+      page: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}page'],
+      ),
+      left: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}left'],
+      ),
+      top: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}top'],
+      ),
+      right: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}right'],
+      ),
+      bottom: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}bottom'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AudioClipsTable createAlias(String alias) {
+    return $AudioClipsTable(attachedDatabase, alias);
+  }
+}
+
+class AudioClip extends DataClass implements Insertable<AudioClip> {
+  final int id;
+  final int songId;
+  final String title;
+
+  /// File name relative to the library directory.
+  final String fileName;
+
+  /// Null when the clip is for the whole song.
+  final int? page;
+  final double? left;
+  final double? top;
+  final double? right;
+  final double? bottom;
+  final DateTime createdAt;
+  const AudioClip({
+    required this.id,
+    required this.songId,
+    required this.title,
+    required this.fileName,
+    this.page,
+    this.left,
+    this.top,
+    this.right,
+    this.bottom,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['song_id'] = Variable<int>(songId);
+    map['title'] = Variable<String>(title);
+    map['file_name'] = Variable<String>(fileName);
+    if (!nullToAbsent || page != null) {
+      map['page'] = Variable<int>(page);
+    }
+    if (!nullToAbsent || left != null) {
+      map['left'] = Variable<double>(left);
+    }
+    if (!nullToAbsent || top != null) {
+      map['top'] = Variable<double>(top);
+    }
+    if (!nullToAbsent || right != null) {
+      map['right'] = Variable<double>(right);
+    }
+    if (!nullToAbsent || bottom != null) {
+      map['bottom'] = Variable<double>(bottom);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  AudioClipsCompanion toCompanion(bool nullToAbsent) {
+    return AudioClipsCompanion(
+      id: Value(id),
+      songId: Value(songId),
+      title: Value(title),
+      fileName: Value(fileName),
+      page: page == null && nullToAbsent ? const Value.absent() : Value(page),
+      left: left == null && nullToAbsent ? const Value.absent() : Value(left),
+      top: top == null && nullToAbsent ? const Value.absent() : Value(top),
+      right: right == null && nullToAbsent
+          ? const Value.absent()
+          : Value(right),
+      bottom: bottom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bottom),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory AudioClip.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AudioClip(
+      id: serializer.fromJson<int>(json['id']),
+      songId: serializer.fromJson<int>(json['songId']),
+      title: serializer.fromJson<String>(json['title']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      page: serializer.fromJson<int?>(json['page']),
+      left: serializer.fromJson<double?>(json['left']),
+      top: serializer.fromJson<double?>(json['top']),
+      right: serializer.fromJson<double?>(json['right']),
+      bottom: serializer.fromJson<double?>(json['bottom']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'songId': serializer.toJson<int>(songId),
+      'title': serializer.toJson<String>(title),
+      'fileName': serializer.toJson<String>(fileName),
+      'page': serializer.toJson<int?>(page),
+      'left': serializer.toJson<double?>(left),
+      'top': serializer.toJson<double?>(top),
+      'right': serializer.toJson<double?>(right),
+      'bottom': serializer.toJson<double?>(bottom),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  AudioClip copyWith({
+    int? id,
+    int? songId,
+    String? title,
+    String? fileName,
+    Value<int?> page = const Value.absent(),
+    Value<double?> left = const Value.absent(),
+    Value<double?> top = const Value.absent(),
+    Value<double?> right = const Value.absent(),
+    Value<double?> bottom = const Value.absent(),
+    DateTime? createdAt,
+  }) => AudioClip(
+    id: id ?? this.id,
+    songId: songId ?? this.songId,
+    title: title ?? this.title,
+    fileName: fileName ?? this.fileName,
+    page: page.present ? page.value : this.page,
+    left: left.present ? left.value : this.left,
+    top: top.present ? top.value : this.top,
+    right: right.present ? right.value : this.right,
+    bottom: bottom.present ? bottom.value : this.bottom,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  AudioClip copyWithCompanion(AudioClipsCompanion data) {
+    return AudioClip(
+      id: data.id.present ? data.id.value : this.id,
+      songId: data.songId.present ? data.songId.value : this.songId,
+      title: data.title.present ? data.title.value : this.title,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      page: data.page.present ? data.page.value : this.page,
+      left: data.left.present ? data.left.value : this.left,
+      top: data.top.present ? data.top.value : this.top,
+      right: data.right.present ? data.right.value : this.right,
+      bottom: data.bottom.present ? data.bottom.value : this.bottom,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AudioClip(')
+          ..write('id: $id, ')
+          ..write('songId: $songId, ')
+          ..write('title: $title, ')
+          ..write('fileName: $fileName, ')
+          ..write('page: $page, ')
+          ..write('left: $left, ')
+          ..write('top: $top, ')
+          ..write('right: $right, ')
+          ..write('bottom: $bottom, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    songId,
+    title,
+    fileName,
+    page,
+    left,
+    top,
+    right,
+    bottom,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AudioClip &&
+          other.id == this.id &&
+          other.songId == this.songId &&
+          other.title == this.title &&
+          other.fileName == this.fileName &&
+          other.page == this.page &&
+          other.left == this.left &&
+          other.top == this.top &&
+          other.right == this.right &&
+          other.bottom == this.bottom &&
+          other.createdAt == this.createdAt);
+}
+
+class AudioClipsCompanion extends UpdateCompanion<AudioClip> {
+  final Value<int> id;
+  final Value<int> songId;
+  final Value<String> title;
+  final Value<String> fileName;
+  final Value<int?> page;
+  final Value<double?> left;
+  final Value<double?> top;
+  final Value<double?> right;
+  final Value<double?> bottom;
+  final Value<DateTime> createdAt;
+  const AudioClipsCompanion({
+    this.id = const Value.absent(),
+    this.songId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.page = const Value.absent(),
+    this.left = const Value.absent(),
+    this.top = const Value.absent(),
+    this.right = const Value.absent(),
+    this.bottom = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  AudioClipsCompanion.insert({
+    this.id = const Value.absent(),
+    required int songId,
+    required String title,
+    required String fileName,
+    this.page = const Value.absent(),
+    this.left = const Value.absent(),
+    this.top = const Value.absent(),
+    this.right = const Value.absent(),
+    this.bottom = const Value.absent(),
+    required DateTime createdAt,
+  }) : songId = Value(songId),
+       title = Value(title),
+       fileName = Value(fileName),
+       createdAt = Value(createdAt);
+  static Insertable<AudioClip> custom({
+    Expression<int>? id,
+    Expression<int>? songId,
+    Expression<String>? title,
+    Expression<String>? fileName,
+    Expression<int>? page,
+    Expression<double>? left,
+    Expression<double>? top,
+    Expression<double>? right,
+    Expression<double>? bottom,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (songId != null) 'song_id': songId,
+      if (title != null) 'title': title,
+      if (fileName != null) 'file_name': fileName,
+      if (page != null) 'page': page,
+      if (left != null) 'left': left,
+      if (top != null) 'top': top,
+      if (right != null) 'right': right,
+      if (bottom != null) 'bottom': bottom,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  AudioClipsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? songId,
+    Value<String>? title,
+    Value<String>? fileName,
+    Value<int?>? page,
+    Value<double?>? left,
+    Value<double?>? top,
+    Value<double?>? right,
+    Value<double?>? bottom,
+    Value<DateTime>? createdAt,
+  }) {
+    return AudioClipsCompanion(
+      id: id ?? this.id,
+      songId: songId ?? this.songId,
+      title: title ?? this.title,
+      fileName: fileName ?? this.fileName,
+      page: page ?? this.page,
+      left: left ?? this.left,
+      top: top ?? this.top,
+      right: right ?? this.right,
+      bottom: bottom ?? this.bottom,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (songId.present) {
+      map['song_id'] = Variable<int>(songId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (page.present) {
+      map['page'] = Variable<int>(page.value);
+    }
+    if (left.present) {
+      map['left'] = Variable<double>(left.value);
+    }
+    if (top.present) {
+      map['top'] = Variable<double>(top.value);
+    }
+    if (right.present) {
+      map['right'] = Variable<double>(right.value);
+    }
+    if (bottom.present) {
+      map['bottom'] = Variable<double>(bottom.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AudioClipsCompanion(')
+          ..write('id: $id, ')
+          ..write('songId: $songId, ')
+          ..write('title: $title, ')
+          ..write('fileName: $fileName, ')
+          ..write('page: $page, ')
+          ..write('left: $left, ')
+          ..write('top: $top, ')
+          ..write('right: $right, ')
+          ..write('bottom: $bottom, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2708,6 +3298,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SetlistsTable setlists = $SetlistsTable(this);
   late final $SetlistItemsTable setlistItems = $SetlistItemsTable(this);
   late final $AnnotationsTable annotations = $AnnotationsTable(this);
+  late final $AudioClipsTable audioClips = $AudioClipsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2721,6 +3312,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     setlists,
     setlistItems,
     annotations,
+    audioClips,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2772,6 +3364,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('annotations', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'songs',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('audio_clips', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -2883,6 +3482,24 @@ final class $$SongsTableReferences
     ).filter((f) => f.songId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_annotationsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$AudioClipsTable, List<AudioClip>>
+  _audioClipsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.audioClips,
+    aliasName: $_aliasNameGenerator(db.songs.id, db.audioClips.songId),
+  );
+
+  $$AudioClipsTableProcessedTableManager get audioClipsRefs {
+    final manager = $$AudioClipsTableTableManager(
+      $_db,
+      $_db.audioClips,
+    ).filter((f) => f.songId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_audioClipsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -3058,6 +3675,31 @@ class $$SongsTableFilterComposer extends Composer<_$AppDatabase, $SongsTable> {
           }) => $$AnnotationsTableFilterComposer(
             $db: $db,
             $table: $db.annotations,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> audioClipsRefs(
+    Expression<bool> Function($$AudioClipsTableFilterComposer f) f,
+  ) {
+    final $$AudioClipsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.audioClips,
+      getReferencedColumn: (t) => t.songId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AudioClipsTableFilterComposer(
+            $db: $db,
+            $table: $db.audioClips,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -3304,6 +3946,31 @@ class $$SongsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> audioClipsRefs<T extends Object>(
+    Expression<T> Function($$AudioClipsTableAnnotationComposer a) f,
+  ) {
+    final $$AudioClipsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.audioClips,
+      getReferencedColumn: (t) => t.songId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AudioClipsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.audioClips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$SongsTableTableManager
@@ -3324,6 +3991,7 @@ class $$SongsTableTableManager
             bool songTagsRefs,
             bool setlistItemsRefs,
             bool annotationsRefs,
+            bool audioClipsRefs,
           })
         > {
   $$SongsTableTableManager(_$AppDatabase db, $SongsTable table)
@@ -3413,6 +4081,7 @@ class $$SongsTableTableManager
                 songTagsRefs = false,
                 setlistItemsRefs = false,
                 annotationsRefs = false,
+                audioClipsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -3421,6 +4090,7 @@ class $$SongsTableTableManager
                     if (songTagsRefs) db.songTags,
                     if (setlistItemsRefs) db.setlistItems,
                     if (annotationsRefs) db.annotations,
+                    if (audioClipsRefs) db.audioClips,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -3505,6 +4175,23 @@ class $$SongsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (audioClipsRefs)
+                        await $_getPrefetchedData<Song, $SongsTable, AudioClip>(
+                          currentTable: table,
+                          referencedTable: $$SongsTableReferences
+                              ._audioClipsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$SongsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).audioClipsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.songId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -3530,6 +4217,7 @@ typedef $$SongsTableProcessedTableManager =
         bool songTagsRefs,
         bool setlistItemsRefs,
         bool annotationsRefs,
+        bool audioClipsRefs,
       })
     >;
 typedef $$FoldersTableCreateCompanionBuilder =
@@ -5713,6 +6401,413 @@ typedef $$AnnotationsTableProcessedTableManager =
       Annotation,
       PrefetchHooks Function({bool songId})
     >;
+typedef $$AudioClipsTableCreateCompanionBuilder =
+    AudioClipsCompanion Function({
+      Value<int> id,
+      required int songId,
+      required String title,
+      required String fileName,
+      Value<int?> page,
+      Value<double?> left,
+      Value<double?> top,
+      Value<double?> right,
+      Value<double?> bottom,
+      required DateTime createdAt,
+    });
+typedef $$AudioClipsTableUpdateCompanionBuilder =
+    AudioClipsCompanion Function({
+      Value<int> id,
+      Value<int> songId,
+      Value<String> title,
+      Value<String> fileName,
+      Value<int?> page,
+      Value<double?> left,
+      Value<double?> top,
+      Value<double?> right,
+      Value<double?> bottom,
+      Value<DateTime> createdAt,
+    });
+
+final class $$AudioClipsTableReferences
+    extends BaseReferences<_$AppDatabase, $AudioClipsTable, AudioClip> {
+  $$AudioClipsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $SongsTable _songIdTable(_$AppDatabase db) => db.songs.createAlias(
+    $_aliasNameGenerator(db.audioClips.songId, db.songs.id),
+  );
+
+  $$SongsTableProcessedTableManager get songId {
+    final $_column = $_itemColumn<int>('song_id')!;
+
+    final manager = $$SongsTableTableManager(
+      $_db,
+      $_db.songs,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_songIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AudioClipsTableFilterComposer
+    extends Composer<_$AppDatabase, $AudioClipsTable> {
+  $$AudioClipsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get page => $composableBuilder(
+    column: $table.page,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get left => $composableBuilder(
+    column: $table.left,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get top => $composableBuilder(
+    column: $table.top,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get right => $composableBuilder(
+    column: $table.right,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get bottom => $composableBuilder(
+    column: $table.bottom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$SongsTableFilterComposer get songId {
+    final $$SongsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.songId,
+      referencedTable: $db.songs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SongsTableFilterComposer(
+            $db: $db,
+            $table: $db.songs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AudioClipsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AudioClipsTable> {
+  $$AudioClipsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get page => $composableBuilder(
+    column: $table.page,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get left => $composableBuilder(
+    column: $table.left,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get top => $composableBuilder(
+    column: $table.top,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get right => $composableBuilder(
+    column: $table.right,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get bottom => $composableBuilder(
+    column: $table.bottom,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$SongsTableOrderingComposer get songId {
+    final $$SongsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.songId,
+      referencedTable: $db.songs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SongsTableOrderingComposer(
+            $db: $db,
+            $table: $db.songs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AudioClipsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AudioClipsTable> {
+  $$AudioClipsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<int> get page =>
+      $composableBuilder(column: $table.page, builder: (column) => column);
+
+  GeneratedColumn<double> get left =>
+      $composableBuilder(column: $table.left, builder: (column) => column);
+
+  GeneratedColumn<double> get top =>
+      $composableBuilder(column: $table.top, builder: (column) => column);
+
+  GeneratedColumn<double> get right =>
+      $composableBuilder(column: $table.right, builder: (column) => column);
+
+  GeneratedColumn<double> get bottom =>
+      $composableBuilder(column: $table.bottom, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$SongsTableAnnotationComposer get songId {
+    final $$SongsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.songId,
+      referencedTable: $db.songs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SongsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.songs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AudioClipsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AudioClipsTable,
+          AudioClip,
+          $$AudioClipsTableFilterComposer,
+          $$AudioClipsTableOrderingComposer,
+          $$AudioClipsTableAnnotationComposer,
+          $$AudioClipsTableCreateCompanionBuilder,
+          $$AudioClipsTableUpdateCompanionBuilder,
+          (AudioClip, $$AudioClipsTableReferences),
+          AudioClip,
+          PrefetchHooks Function({bool songId})
+        > {
+  $$AudioClipsTableTableManager(_$AppDatabase db, $AudioClipsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AudioClipsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AudioClipsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AudioClipsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> songId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> fileName = const Value.absent(),
+                Value<int?> page = const Value.absent(),
+                Value<double?> left = const Value.absent(),
+                Value<double?> top = const Value.absent(),
+                Value<double?> right = const Value.absent(),
+                Value<double?> bottom = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => AudioClipsCompanion(
+                id: id,
+                songId: songId,
+                title: title,
+                fileName: fileName,
+                page: page,
+                left: left,
+                top: top,
+                right: right,
+                bottom: bottom,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int songId,
+                required String title,
+                required String fileName,
+                Value<int?> page = const Value.absent(),
+                Value<double?> left = const Value.absent(),
+                Value<double?> top = const Value.absent(),
+                Value<double?> right = const Value.absent(),
+                Value<double?> bottom = const Value.absent(),
+                required DateTime createdAt,
+              }) => AudioClipsCompanion.insert(
+                id: id,
+                songId: songId,
+                title: title,
+                fileName: fileName,
+                page: page,
+                left: left,
+                top: top,
+                right: right,
+                bottom: bottom,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AudioClipsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({songId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (songId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.songId,
+                                referencedTable: $$AudioClipsTableReferences
+                                    ._songIdTable(db),
+                                referencedColumn: $$AudioClipsTableReferences
+                                    ._songIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AudioClipsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AudioClipsTable,
+      AudioClip,
+      $$AudioClipsTableFilterComposer,
+      $$AudioClipsTableOrderingComposer,
+      $$AudioClipsTableAnnotationComposer,
+      $$AudioClipsTableCreateCompanionBuilder,
+      $$AudioClipsTableUpdateCompanionBuilder,
+      (AudioClip, $$AudioClipsTableReferences),
+      AudioClip,
+      PrefetchHooks Function({bool songId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5732,4 +6827,6 @@ class $AppDatabaseManager {
       $$SetlistItemsTableTableManager(_db, _db.setlistItems);
   $$AnnotationsTableTableManager get annotations =>
       $$AnnotationsTableTableManager(_db, _db.annotations);
+  $$AudioClipsTableTableManager get audioClips =>
+      $$AudioClipsTableTableManager(_db, _db.audioClips);
 }
