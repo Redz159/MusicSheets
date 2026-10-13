@@ -46,7 +46,7 @@ class AnnotationToolbar extends StatelessWidget {
                         children: [
                           for (final t in AnnoTool.values)
                             _ToolButton(
-                              icon: t.icon,
+                              tool: t,
                               tooltip: t.label,
                               selected: tools.tool == t,
                               onTap: () => tools.tool = t,
@@ -268,9 +268,12 @@ class _Sep extends StatelessWidget {
 }
 
 class _ToolButton extends StatelessWidget {
-  const _ToolButton({required this.icon, required this.tooltip, this.selected = false, this.onTap});
+  const _ToolButton({this.icon, this.tool, required this.tooltip, this.selected = false, this.onTap});
 
-  final IconData icon;
+  final IconData? icon;
+
+  /// Draws the tool's own icon instead of [icon].
+  final AnnoTool? tool;
   final String tooltip;
   final bool selected;
   final VoidCallback? onTap;
@@ -278,6 +281,11 @@ class _ToolButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final color = onTap == null
+        ? scheme.onSurface.withValues(alpha: 0.3)
+        : selected
+        ? scheme.onPrimaryContainer
+        : scheme.onSurface;
     return Tooltip(
       message: tooltip,
       child: InkWell(
@@ -292,15 +300,7 @@ class _ToolButton extends StatelessWidget {
             color: selected ? scheme.primaryContainer : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Icon(
-            icon,
-            size: 22,
-            color: onTap == null
-                ? scheme.onSurface.withValues(alpha: 0.3)
-                : selected
-                ? scheme.onPrimaryContainer
-                : scheme.onSurface,
-          ),
+          child: tool?.buildIcon(color, size: 22) ?? Icon(icon, size: 22, color: color),
         ),
       ),
     );
