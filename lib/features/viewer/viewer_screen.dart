@@ -754,7 +754,7 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                   if (_marking != null && _units[_unit].contains(flat))
                     AreaSelector(
                       rect: _markRect?.flat == flat ? _markRect!.rect : null,
-                      onChanged: (r) => setState(() => _markRect = (flat: flat, rect: r)),
+                      onChanged: (r) => setState(() => _markRect = r == null ? null : (flat: flat, rect: r)),
                     )
                   else if (!_annotating)
                     ClipAreasLayer(
@@ -897,7 +897,9 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                 const SizedBox(width: 10),
                 Flexible(
                   child: Text(
-                    'Drag over the part for “${_marking!.title}”',
+                    sel == null
+                        ? 'Drag over the part for “${_marking!.title}”'
+                        : 'Drag the edges or corners to adjust “${_marking!.title}”',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),

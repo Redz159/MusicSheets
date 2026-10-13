@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/db.dart';
@@ -10,7 +11,7 @@ String _time(Duration d) {
 
 String clipSubtitle(AudioClip c) {
   final a = c.area;
-  return a == null ? 'Whole song' : 'Part · page ${a.page + 1}';
+  return a == null ? 'Whole song' : 'Part Â· page ${a.page + 1}';
 }
 
 /// Floating card listing the song's recordings, with the player on top.
@@ -423,20 +424,53 @@ class _ClipArea extends StatelessWidget {
   }
 }
 
-/// Drag a rectangle over the page to mark which part a recording belongs to.
+enum _Grab { create, move, left, right, top, bottom, topLeft, topRight, bottomLeft, bottomRight }
+
+/// Drag over the page to mark which part a recording belongs to. An existing mark
+/// can be adjusted: drag an edge (one direction), a corner (both) or the inside
+/// (move it). The ✕ in the top-right corner removes it.
 class AreaSelector extends StatefulWidget {
   const AreaSelector({super.key, required this.rect, required this.onChanged});
 
   /// Current selection on this page (normalized), if any.
   final Rect? rect;
-  final ValueChanged<Rect> onChanged;
+  final ValueChanged<Rect?> onChanged;
 
   @override
   State<AreaSelector> createState() => _AreaSelectorState();
 }
 
 class _AreaSelectorState extends State<AreaSelector> {
-  Offset? _start;
+  /// How close (logical px) a touch must be to an edge to grab it.
+  static const _reach = 24.0;
+
+  _Grab? _grab;
+  Offset _down = Offset.zero;
+  Rect? _startRect;
+
+  _Grab _grabAt(Offset p, Rect r) {
+    final nearL = (p.dx - r.left).abs() < _reach, nearR = (p.dx - r.right).abs() < _reach;
+    final nearT = (p.dy - r.top).abs() < _reach, nearB = (p.dy - r.bottom).abs() < _reach;
+    final inX = p.dx > r.left - _reach && p.dx < r.right + _reach;
+    final inY = p.dy > r.top - _reach && p.dy < r.bottom + _reach;
+    if (!inX || !inY) return _Grab.create;
+    // On a small mark, prefer the nearer of two opposite edges.
+    final left = nearL && (!nearR || (p.dx - r.left).abs() <= (p.dx - r.right).abs());
+    final right = nearR && !left;
+    final top = nearT && (!nearB || (p.dy - r.top).abs() <= (p.dy - r.bottom).abs());
+    final bottom = nearB && !top;
+    return switch ((left, right, top, bottom)) {
+      (true, _, true, _) => _Grab.topLeft,
+      (_, true, true, _) => _Grab.topRight,
+      (true, _, _, true) => _Grab.bottomLeft,
+      (_, true, _, true) => _Grab.bottomRight,
+      (true, _, _, _) => _Grab.left,
+      (_, true, _, _) => _Grab.right,
+      (_, _, true, _) => _Grab.top,
+      (_, _, _, true) => _Grab.bottom,
+      _ => r.contains(p) ? _Grab.move : _Grab.create,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -444,44 +478,128 @@ class _AreaSelectorState extends State<AreaSelector> {
     return LayoutBuilder(
       builder: (context, box) {
         final size = box.biggest;
-        Offset norm(Offset o) => Offset((o.dx / size.width).clamp(0, 1), (o.dy / size.height).clamp(0, 1));
-        final r = widget.rect;
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onPanStart: (d) {
-            final s = _start = norm(d.localPosition);
-            widget.onChanged(Rect.fromPoints(s, s));
-          },
-          onPanUpdate: (d) {
-            final s = _start;
-            if (s != null) widget.onChanged(Rect.fromPoints(s, norm(d.localPosition)));
-          },
-          onPanEnd: (_) => _start = null,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: ColoredBox(color: Colors.black.withValues(alpha: r == null ? 0.08 : 0)),
-              ),
-              if (r != null)
-                Positioned.fromRect(
-                  rect: Rect.fromLTRB(
-                    r.left * size.width,
-                    r.top * size.height,
-                    r.right * size.width,
-                    r.bottom * size.height,
-                  ),
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: scheme.primary.withValues(alpha: 0.15),
-                        border: Border.all(color: scheme.primary, width: 3),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
+        Rect toPx(Rect n) =>
+            Rect.fromLTRB(n.left * size.width, n.top * size.height, n.right * size.width, n.bottom * size.height);
+        Rect toNorm(Rect px) =>
+            Rect.fromLTRB(px.left / size.width, px.top / size.height, px.right / size.width, px.bottom / size.height);
+        final page = Offset.zero & size;
+        final r = widget.rect == null ? null : toPx(widget.rect!);
+
+        void update(Offset p) {
+          final s = _startRect;
+          final g = _grab;
+          if (g == null) return;
+          final c = Offset(p.dx.clamp(0, size.width), p.dy.clamp(0, size.height));
+          if (g == _Grab.create || s == null) {
+            widget.onChanged(toNorm(Rect.fromPoints(_down, c)));
+            return;
+          }
+          final d = p - _down;
+          if (g == _Grab.move) {
+            final dx = d.dx.clamp(-s.left, size.width - s.right);
+            final dy = d.dy.clamp(-s.top, size.height - s.bottom);
+            widget.onChanged(toNorm(s.shift(Offset(dx, dy))));
+            return;
+          }
+          var (l, t, rr, b) = (s.left, s.top, s.right, s.bottom);
+          if (g == _Grab.left || g == _Grab.topLeft || g == _Grab.bottomLeft) l = c.dx;
+          if (g == _Grab.right || g == _Grab.topRight || g == _Grab.bottomRight) rr = c.dx;
+          if (g == _Grab.top || g == _Grab.topLeft || g == _Grab.topRight) t = c.dy;
+          if (g == _Grab.bottom || g == _Grab.bottomLeft || g == _Grab.bottomRight) b = c.dy;
+          // Dragging an edge past the opposite one simply flips the mark.
+          widget.onChanged(toNorm(Rect.fromPoints(Offset(l, t), Offset(rr, b))));
+        }
+
+        final children = <Widget>[
+          Positioned.fill(
+            child: ColoredBox(color: Colors.black.withValues(alpha: r == null ? 0.08 : 0)),
+          ),
+        ];
+        if (r != null) {
+          children.add(
+            Positioned.fromRect(
+              rect: r,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.15),
+                    border: Border.all(color: scheme.primary, width: 3),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-            ],
-          ),
+              ),
+            ),
+          );
+          // Handles: corners as dots, edge middles as short bars.
+          Widget handle(Offset c, Size s) => Positioned(
+            left: c.dx - s.width / 2,
+            top: c.dy - s.height / 2,
+            width: s.width,
+            height: s.height,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: scheme.surface,
+                  border: Border.all(color: scheme.primary, width: 2.5),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 3)],
+                ),
+              ),
+            ),
+          );
+          const dot = Size(16, 16);
+          children.addAll([
+            handle(r.topLeft, dot),
+            handle(r.bottomLeft, dot),
+            handle(r.bottomRight, dot),
+            handle(r.centerLeft, const Size(10, 28)),
+            handle(r.centerRight, const Size(10, 28)),
+            handle(r.topCenter, const Size(28, 10)),
+            handle(r.bottomCenter, const Size(28, 10)),
+          ]);
+          // Remove button on the top-right corner, kept inside the page.
+          const btn = 34.0;
+          final cx = r.right.clamp(btn / 2, size.width - btn / 2);
+          final cy = r.top.clamp(btn / 2, size.height - btn / 2);
+          children.add(
+            Positioned(
+              left: cx - btn / 2,
+              top: cy - btn / 2,
+              width: btn,
+              height: btn,
+              child: Material(
+                color: scheme.error,
+                shape: CircleBorder(side: BorderSide(color: scheme.onError, width: 2)),
+                elevation: 3,
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => widget.onChanged(null),
+                  child: Tooltip(
+                    message: 'Remove marking',
+                    child: Icon(Icons.close, size: 20, color: scheme.onError),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          // Grab what is under the finger, not where the drag slop was exceeded.
+          dragStartBehavior: DragStartBehavior.down,
+          onPanStart: (d) {
+            _down = d.localPosition;
+            _startRect = r;
+            _grab = r == null ? _Grab.create : _grabAt(_down, r);
+            if (_grab == _Grab.create && page.contains(_down)) {
+              widget.onChanged(toNorm(Rect.fromPoints(_down, _down)));
+            }
+          },
+          onPanUpdate: (d) => update(d.localPosition),
+          onPanEnd: (_) => _grab = null,
+          onPanCancel: () => _grab = null,
+          child: Stack(clipBehavior: Clip.none, children: children),
         );
       },
     );
