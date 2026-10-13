@@ -53,39 +53,52 @@ class AnnotationToolbar extends StatelessWidget {
                             ),
                           const _Sep(),
                           if (showColors)
-                            for (final c in colors)
-                              GestureDetector(
-                                onTap: () => tools.color = c,
-                                child: Container(
-                                  width: 28,
-                                  height: 28,
-                                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                                  decoration: BoxDecoration(
-                                    color: Color(c).withValues(alpha: 1),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: tools.color == c ? scheme.primary : scheme.outlineVariant,
-                                      width: tools.color == c ? 3 : 1,
-                                    ),
+                            _Flyout<int>(
+                              // A new key per palette so it closes when switching pen/highlighter.
+                              key: ValueKey(colors),
+                              tooltip: 'Color',
+                              options: colors,
+                              selected: tools.color,
+                              onSelected: (c) => tools.color = c,
+                              itemBuilder: (c, selected) => Container(
+                                width: 28,
+                                height: 28,
+                                margin: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: Color(c).withValues(alpha: 1),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: selected ? scheme.primary : scheme.outlineVariant,
+                                    width: selected ? 3 : 1,
                                   ),
                                 ),
                               ),
+                            ),
                           if (showWidths) ...[
                             const _Sep(),
-                            for (var i = 0; i < 3; i++)
-                              _ToolButton(
-                                tooltip: ['Thin', 'Medium', 'Thick'][i],
-                                selected: tools.widthIndex == i,
-                                onTap: () => tools.widthIndex = i,
+                            _Flyout<int>(
+                              tooltip: 'Thickness',
+                              options: const [0, 1, 2],
+                              selected: tools.widthIndex,
+                              onSelected: (i) => tools.widthIndex = i,
+                              itemBuilder: (i, selected) => Container(
+                                width: 42,
+                                height: 42,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: selected ? scheme.primaryContainer : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
                                 child: Container(
                                   width: 18,
                                   height: 3.0 + i * 3,
                                   decoration: BoxDecoration(
-                                    color: scheme.onSurface,
+                                    color: selected ? scheme.onPrimaryContainer : scheme.onSurface,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
                               ),
+                            ),
                           ],
                           const _Sep(),
                           _ToolButton(icon: Icons.undo, tooltip: 'Undo', onTap: store.canUndo ? store.undo : null),
@@ -144,6 +157,71 @@ class AnnotationToolbar extends StatelessWidget {
   }
 }
 
+/// Shows only the current choice; tapping it slides the other options out to the right.
+class _Flyout<T> extends StatefulWidget {
+  const _Flyout({
+    super.key,
+    required this.tooltip,
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+    required this.itemBuilder,
+  });
+
+  final String tooltip;
+  final List<T> options;
+  final T selected;
+  final ValueChanged<T> onSelected;
+  final Widget Function(T value, bool selected) itemBuilder;
+
+  @override
+  State<_Flyout<T>> createState() => _FlyoutState<T>();
+}
+
+class _FlyoutState<T> extends State<_Flyout<T>> {
+  bool _open = false;
+
+  Widget _tappable(T value, bool selected, VoidCallback onTap) =>
+      InkWell(onTap: onTap, customBorder: const CircleBorder(), child: widget.itemBuilder(value, selected));
+
+  @override
+  Widget build(BuildContext context) {
+    final others = [
+      for (final o in widget.options)
+        if (o != widget.selected) o,
+    ];
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Tooltip(message: widget.tooltip, child: _tappable(widget.selected, true, () => setState(() => _open = !_open))),
+        AnimatedRotation(
+          turns: _open ? 0.5 : 0,
+          duration: const Duration(milliseconds: 200),
+          child: Icon(Icons.chevron_right, size: 16, color: muted),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.centerLeft,
+          child: _open
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final o in others)
+                      _tappable(o, false, () {
+                        widget.onSelected(o);
+                        setState(() => _open = false);
+                      }),
+                  ],
+                )
+              : const SizedBox(height: 42),
+        ),
+      ],
+    );
+  }
+}
+
 class _Panel extends StatelessWidget {
   const _Panel({required this.child});
   final Widget child;
@@ -173,10 +251,9 @@ class _Sep extends StatelessWidget {
 }
 
 class _ToolButton extends StatelessWidget {
-  const _ToolButton({this.icon, this.child, required this.tooltip, this.selected = false, this.onTap});
+  const _ToolButton({required this.icon, required this.tooltip, this.selected = false, this.onTap});
 
-  final IconData? icon;
-  final Widget? child;
+  final IconData icon;
   final String tooltip;
   final bool selected;
   final VoidCallback? onTap;
@@ -198,17 +275,15 @@ class _ToolButton extends StatelessWidget {
             color: selected ? scheme.primaryContainer : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
-          child:
-              child ??
-              Icon(
-                icon,
-                size: 22,
-                color: onTap == null
-                    ? scheme.onSurface.withValues(alpha: 0.3)
-                    : selected
-                    ? scheme.onPrimaryContainer
-                    : scheme.onSurface,
-              ),
+          child: Icon(
+            icon,
+            size: 22,
+            color: onTap == null
+                ? scheme.onSurface.withValues(alpha: 0.3)
+                : selected
+                ? scheme.onPrimaryContainer
+                : scheme.onSurface,
+          ),
         ),
       ),
     );
