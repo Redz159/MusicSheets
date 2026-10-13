@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math' as math;
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,11 +14,14 @@ import '../../core/viewer_layout.dart';
 import '../../data/db.dart';
 import '../../data/providers.dart';
 import '../../services/pdf_render.dart';
+import '../../widgets/dialogs.dart';
 import '../../widgets/song_actions.dart';
 import '../annotate/annotation_layer.dart';
 import '../annotate/annotation_store.dart';
 import '../annotate/annotation_toolbar.dart';
 import '../annotate/tool_state.dart';
+import '../metronome/metronome.dart';
+import '../metronome/metronome_panel.dart';
 
 class ViewerArgs {
   const ViewerArgs({
@@ -73,6 +78,8 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
   bool _annotating = false;
   bool _zoomed = false;
   double _renderZoom = 1;
+  late final _metronome = Metronome(ref.read(sharedPrefsProvider));
+  bool _metronomeOpen = false;
   double _slotWidth = 0;
 
   // Annotate mode: one finger / the pen draws, two fingers zoom and pan.
@@ -106,7 +113,10 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     _flat = flattenPages(counts);
     _offsets = songOffsets(counts);
     final s = songs[startSong];
-    final page = (args.startPage ?? (args.resumeLastPage ? s.lastPage : 0)).clamp(0, (s.pageCount - 1).clamp(0, 1 << 30));
+    final page = (args.startPage ?? (args.resumeLastPage ? s.lastPage : 0)).clamp(
+      0,
+      (s.pageCount - 1).clamp(0, 1 << 30),
+    );
     _startFlat = _offsets[startSong] + page;
     await Future.wait([
       _store.load(songs.map((s) => s.id)),
@@ -131,6 +141,7 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     _pinching.dispose();
     _scrubber.dispose();
     _tools.dispose();
+    _metronome.dispose();
     super.dispose();
   }
 
@@ -271,6 +282,9 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
         _showToast('${songIndex + 1}/${_songs!.length}  ·  ${song.title}');
       }
       if (_markedOpened.add(song.id)) _db.markOpened(song.id);
+      // The metronome follows the song's saved tempo (also mid-setlist).
+      final tempo = song.tempo;
+      if (tempo != null) _metronome.setBpm(tempo);
     }
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(seconds: 1), _flushLastPage);
@@ -405,7 +419,10 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     const background = Color(0xFF1C1C1E);
 
     if (songs == null) {
-      return const Scaffold(backgroundColor: background, body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        backgroundColor: background,
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
     _syncUnits(settings.twoPageLandscape && size.width > size.height && size.width >= 700);
     final current = _songAt(_currentFlat);
@@ -425,64 +442,101 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
           focusNode: _focus,
           autofocus: true,
           onKeyEvent: _onKey,
-          child: Stack(children: [
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                // No double-tap handler on purpose: it would delay every single tap.
-                onTapUp: _annotating ? null : (d) => _handleTap(d.globalPosition),
-                child: PageView.builder(
-                  key: ValueKey(_spread),
-                  controller: _pc,
-                  physics: _annotating || _zoomed ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
-                  itemCount: _units.length,
-                  onPageChanged: _onPageChanged,
-                  itemBuilder: (context, u) => _buildUnit(u, settings),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  // No double-tap handler on purpose: it would delay every single tap.
+                  onTapUp: _annotating ? null : (d) => _handleTap(d.globalPosition),
+                  child: PageView.builder(
+                    key: ValueKey(_spread),
+                    controller: _pc,
+                    physics: _annotating || _zoomed ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
+                    itemCount: _units.length,
+                    onPageChanged: _onPageChanged,
+                    itemBuilder: (context, u) => _buildUnit(u, settings),
+                  ),
                 ),
               ),
-            ),
-            // Song change / end toast
-            Positioned(
-              top: MediaQuery.paddingOf(context).top + (_chrome ? 76 : 16),
-              left: 0,
-              right: 0,
-              child: IgnorePointer(
-                child: Center(
-                  child: AnimatedOpacity(
-                    opacity: _toast == null ? 0 : 1,
-                    duration: const Duration(milliseconds: 200),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.78), borderRadius: BorderRadius.circular(24)),
-                      child: Text(_toast ?? '', style: const TextStyle(color: Colors.white, fontSize: 16)),
+              // Song change / end toast
+              Positioned(
+                top: MediaQuery.paddingOf(context).top + (_chrome ? 76 : 16),
+                left: 0,
+                right: 0,
+                child: IgnorePointer(
+                  child: Center(
+                    child: AnimatedOpacity(
+                      opacity: _toast == null ? 0 : 1,
+                      duration: const Duration(milliseconds: 200),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.78),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Text(_toast ?? '', style: const TextStyle(color: Colors.white, fontSize: 16)),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            _topBar(current, pageInSong, settings),
-            _bottomBar(),
-            if (_annotating)
-              Positioned(
-                left: 12,
-                right: 12,
-                top: MediaQuery.paddingOf(context).top + 12,
-                child: Center(
-                  child: AnnotationToolbar(
-                    tools: _tools,
-                    store: _store,
-                    stylusOnly: settings.stylusOnly,
-                    onStylusOnly: (v) => ref.read(settingsProvider.notifier).set((s) => s.copyWith(stylusOnly: v)),
-                    onClearPage: () {
-                      for (final f in _units[_unit]) {
-                        _store.clearPage(_songAt(f).id, _flat[f].page);
-                      }
-                    },
-                    onDone: () => _setAnnotating(false),
+              Positioned.fill(child: MetronomeFlash(metronome: _metronome)),
+              _topBar(current, pageInSong, settings),
+              _bottomBar(),
+              if (_metronomeOpen)
+                Positioned(
+                  top: MediaQuery.paddingOf(context).top + 72,
+                  right: 12,
+                  width: math.min(380, size.width - 24),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: size.height - MediaQuery.paddingOf(context).top - 96),
+                    child: MetronomePanel(
+                      metronome: _metronome,
+                      songTempo: current.tempo,
+                      onSaveTempo: (bpm) async {
+                        await _db.updateSong(current.id, SongsCompanion(tempo: Value(bpm)));
+                        if (context.mounted) showSnack(context, 'Saved $bpm BPM to “${current.title}”');
+                      },
+                      onClose: () => setState(() => _metronomeOpen = false),
+                    ),
+                  ),
+                )
+              else
+                ListenableBuilder(
+                  listenable: _metronome,
+                  builder: (context, _) => AnimatedPositioned(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    right: 12,
+                    bottom: MediaQuery.paddingOf(context).bottom + (_chrome ? 136 : 16),
+                    child: _metronome.running
+                        ? MetronomePill(metronome: _metronome, onOpen: () => setState(() => _metronomeOpen = true))
+                        : const SizedBox.shrink(),
                   ),
                 ),
-              ),
-          ]),
+              if (_annotating)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  top: MediaQuery.paddingOf(context).top + 12,
+                  child: Center(
+                    child: AnnotationToolbar(
+                      tools: _tools,
+                      store: _store,
+                      stylusOnly: settings.stylusOnly,
+                      onStylusOnly: (v) => ref.read(settingsProvider.notifier).set((s) => s.copyWith(stylusOnly: v)),
+                      onClearPage: () {
+                        for (final f in _units[_unit]) {
+                          _store.clearPage(_songAt(f).id, _flat[f].page);
+                        }
+                      },
+                      onDone: () => _setAnnotating(false),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -500,15 +554,17 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       if (pages.length == 1) {
         child = _pageSlot(pages.first, settings, editable: editable, zoom: zoom);
       } else {
-        child = Row(children: [
-          Expanded(
-              child: _pageSlot(pages[0], settings,
-                  editable: editable, zoom: zoom, alignment: Alignment.centerRight)),
-          const SizedBox(width: 4),
-          Expanded(
-              child: _pageSlot(pages[1], settings,
-                  editable: editable, zoom: zoom, alignment: Alignment.centerLeft)),
-        ]);
+        child = Row(
+          children: [
+            Expanded(
+              child: _pageSlot(pages[0], settings, editable: editable, zoom: zoom, alignment: Alignment.centerRight),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: _pageSlot(pages[1], settings, editable: editable, zoom: zoom, alignment: Alignment.centerLeft),
+            ),
+          ],
+        );
       }
     }
     // Every page gets an InteractiveViewer (and Listener) so the tree doesn't change
@@ -534,39 +590,48 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
 
   /// Top half: the next page's top. Bottom half: the current page's bottom.
   Widget _halfComposite(int nextFlat, int currentFlat, AppSettings settings) {
-    return LayoutBuilder(builder: (context, c) {
-      final h = c.maxHeight;
-      final scheme = Theme.of(context).colorScheme;
-      return Column(children: [
-        SizedBox(
-          height: h / 2 - 1,
-          child: ClipRect(
-            child: OverflowBox(
-              alignment: Alignment.topCenter,
-              minHeight: h,
-              maxHeight: h,
-              child: _pageSlot(nextFlat, settings, editable: false),
+    return LayoutBuilder(
+      builder: (context, c) {
+        final h = c.maxHeight;
+        final scheme = Theme.of(context).colorScheme;
+        return Column(
+          children: [
+            SizedBox(
+              height: h / 2 - 1,
+              child: ClipRect(
+                child: OverflowBox(
+                  alignment: Alignment.topCenter,
+                  minHeight: h,
+                  maxHeight: h,
+                  child: _pageSlot(nextFlat, settings, editable: false),
+                ),
+              ),
             ),
-          ),
-        ),
-        Container(height: 2, color: scheme.primary),
-        SizedBox(
-          height: h / 2 - 1,
-          child: ClipRect(
-            child: OverflowBox(
-              alignment: Alignment.bottomCenter,
-              minHeight: h,
-              maxHeight: h,
-              child: _pageSlot(currentFlat, settings, editable: false),
+            Container(height: 2, color: scheme.primary),
+            SizedBox(
+              height: h / 2 - 1,
+              child: ClipRect(
+                child: OverflowBox(
+                  alignment: Alignment.bottomCenter,
+                  minHeight: h,
+                  maxHeight: h,
+                  child: _pageSlot(currentFlat, settings, editable: false),
+                ),
+              ),
             ),
-          ),
-        ),
-      ]);
-    });
+          ],
+        );
+      },
+    );
   }
 
-  Widget _pageSlot(int flat, AppSettings settings,
-      {required bool editable, double zoom = 1, Alignment alignment = Alignment.center}) {
+  Widget _pageSlot(
+    int flat,
+    AppSettings settings, {
+    required bool editable,
+    double zoom = 1,
+    Alignment alignment = Alignment.center,
+  }) {
     final ref0 = _flat[flat];
     final song = _songs![ref0.song];
     final path = _paths.pdf(song.fileName);
@@ -576,7 +641,9 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
         future: _docs.load(path),
         builder: (context, snap) {
           if (snap.hasError) {
-            return const Center(child: Text('Could not open this PDF', style: TextStyle(color: Colors.white70)));
+            return const Center(
+              child: Text('Could not open this PDF', style: TextStyle(color: Colors.white70)),
+            );
           }
           if (!snap.hasData) return const SizedBox.expand();
           return _pageSlot(flat, settings, editable: editable, zoom: zoom, alignment: alignment);
@@ -591,34 +658,39 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       alignment: alignment,
       child: AspectRatio(
         aspectRatio: page.width / page.height,
-        child: LayoutBuilder(builder: (context, c) {
-          _slotWidth = c.maxWidth;
-          return DecoratedBox(
-            decoration: const BoxDecoration(boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 10)]),
-            child: Stack(fit: StackFit.expand, children: [
-              image,
-              AnnotationLayer(
-                key: ValueKey('anno-${song.id}-${ref0.page}'),
-                songId: song.id,
-                page: ref0.page,
-                store: _store,
-                tools: _tools,
-                editable: editable,
-                pinching: _pinching,
-                stylusOnly: settings.stylusOnly,
-                onFingerTap: (g) {
-                  // In stylus-only mode fingers still use the tap zones.
-                  final w = MediaQuery.sizeOf(context).width;
-                  final zone = settings.tapZoneFraction;
-                  if (g.dx / w < zone) _prev();
-                  if (g.dx / w > 1 - zone) _next();
-                },
-                // When zoomed, a finger pans instead of turning the page.
-                onFingerSwipe: _zoomed ? null : (d) => d > 0 ? _next() : _prev(),
+        child: LayoutBuilder(
+          builder: (context, c) {
+            _slotWidth = c.maxWidth;
+            return DecoratedBox(
+              decoration: const BoxDecoration(boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 10)]),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  image,
+                  AnnotationLayer(
+                    key: ValueKey('anno-${song.id}-${ref0.page}'),
+                    songId: song.id,
+                    page: ref0.page,
+                    store: _store,
+                    tools: _tools,
+                    editable: editable,
+                    pinching: _pinching,
+                    stylusOnly: settings.stylusOnly,
+                    onFingerTap: (g) {
+                      // In stylus-only mode fingers still use the tap zones.
+                      final w = MediaQuery.sizeOf(context).width;
+                      final zone = settings.tapZoneFraction;
+                      if (g.dx / w < zone) _prev();
+                      if (g.dx / w > 1 - zone) _next();
+                    },
+                    // When zoomed, a finger pans instead of turning the page.
+                    onFingerSwipe: _zoomed ? null : (d) => d > 0 ? _next() : _prev(),
+                  ),
+                ],
               ),
-            ]),
-          );
-        }),
+            );
+          },
+        ),
       ),
     );
   }
@@ -645,73 +717,100 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
           padding: EdgeInsets.only(top: top, left: 4, right: 8),
           child: SizedBox(
             height: 64,
-            child: Row(children: [
-              IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.of(context).maybePop()),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(current.title,
-                      maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleMedium),
-                  Text(
-                    [
-                      if (widget.args.isSetlist) '${widget.args.setlistName} · ${songIndex + 1}/${_songs!.length}',
-                      if (current.composer.isNotEmpty) current.composer,
-                      'Page $pageLabel',
-                    ].join('  ·  '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
+            child: Row(
+              children: [
+                IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.of(context).maybePop()),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        current.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text(
+                        [
+                          if (widget.args.isSetlist) '${widget.args.setlistName} · ${songIndex + 1}/${_songs!.length}',
+                          if (current.composer.isNotEmpty) current.composer,
+                          'Page $pageLabel',
+                        ].join('  ·  '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ),
-                ]),
-              ),
-              IconButton(
-                tooltip: 'Annotate',
-                icon: const Icon(Icons.draw_outlined),
-                onPressed: () => _setAnnotating(true),
-              ),
-              PopupMenuButton<String>(
-                tooltip: 'View options',
-                icon: const Icon(Icons.chrome_reader_mode_outlined),
-                onSelected: (v) {
-                  switch (v) {
-                    case 'two':
-                      notifier.set((s) => s.copyWith(twoPageLandscape: !s.twoPageLandscape));
-                    case 'half':
-                      notifier.set((s) => s.copyWith(halfPageTurn: !s.halfPageTurn));
-                      setState(() => _half = false);
-                    default:
-                      notifier.set((s) => s.copyWith(pageTint: PageTint.values.byName(v)));
-                  }
-                },
-                itemBuilder: (_) => [
-                  CheckedPopupMenuItem(
-                      value: 'two', checked: settings.twoPageLandscape, child: const Text('Two pages in landscape')),
-                  CheckedPopupMenuItem(value: 'half', checked: settings.halfPageTurn, child: const Text('Half-page turns')),
-                  const PopupMenuDivider(),
-                  for (final t in PageTint.values)
-                    CheckedPopupMenuItem(value: t.name, checked: settings.pageTint == t, child: Text('${t.label} page')),
-                ],
-              ),
-              IconButton(
-                tooltip: 'Share PDF',
-                icon: const Icon(Icons.ios_share),
-                onPressed: () async {
-                  await _store.flush();
-                  if (mounted) await exportSongs(context, ref, [current], current.title);
-                },
-              ),
-              IconButton(
-                tooltip: 'Edit details',
-                icon: const Icon(Icons.info_outline),
-                onPressed: () => editSong(context, ref, current),
-              ),
-              if (widget.args.isSetlist)
-                IconButton(
-                  tooltip: 'Songs',
-                  icon: const Icon(Icons.format_list_numbered),
-                  onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
                 ),
-            ]),
+                IconButton(
+                  tooltip: 'Annotate',
+                  icon: const Icon(Icons.draw_outlined),
+                  onPressed: () => _setAnnotating(true),
+                ),
+                IconButton(
+                  tooltip: 'Metronome',
+                  isSelected: _metronomeOpen,
+                  icon: const MetronomeIcon(),
+                  onPressed: () => setState(() => _metronomeOpen = !_metronomeOpen),
+                ),
+                PopupMenuButton<String>(
+                  tooltip: 'View options',
+                  icon: const Icon(Icons.chrome_reader_mode_outlined),
+                  onSelected: (v) {
+                    switch (v) {
+                      case 'two':
+                        notifier.set((s) => s.copyWith(twoPageLandscape: !s.twoPageLandscape));
+                      case 'half':
+                        notifier.set((s) => s.copyWith(halfPageTurn: !s.halfPageTurn));
+                        setState(() => _half = false);
+                      default:
+                        notifier.set((s) => s.copyWith(pageTint: PageTint.values.byName(v)));
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    CheckedPopupMenuItem(
+                      value: 'two',
+                      checked: settings.twoPageLandscape,
+                      child: const Text('Two pages in landscape'),
+                    ),
+                    CheckedPopupMenuItem(
+                      value: 'half',
+                      checked: settings.halfPageTurn,
+                      child: const Text('Half-page turns'),
+                    ),
+                    const PopupMenuDivider(),
+                    for (final t in PageTint.values)
+                      CheckedPopupMenuItem(
+                        value: t.name,
+                        checked: settings.pageTint == t,
+                        child: Text('${t.label} page'),
+                      ),
+                  ],
+                ),
+                IconButton(
+                  tooltip: 'Share PDF',
+                  icon: const Icon(Icons.ios_share),
+                  onPressed: () async {
+                    await _store.flush();
+                    if (mounted) await exportSongs(context, ref, [current], current.title);
+                  },
+                ),
+                IconButton(
+                  tooltip: 'Edit details',
+                  icon: const Icon(Icons.info_outline),
+                  onPressed: () => editSong(context, ref, current),
+                ),
+                if (widget.args.isSetlist)
+                  IconButton(
+                    tooltip: 'Songs',
+                    icon: const Icon(Icons.format_list_numbered),
+                    onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -765,30 +864,33 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     final currentSong = _flat[_currentFlat].song;
     return Drawer(
       child: SafeArea(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Text(widget.args.setlistName ?? '', style: Theme.of(context).textTheme.titleLarge),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: songs.length,
-              itemBuilder: (context, i) {
-                final s = ref.read(songByIdProvider)[songs[i].id] ?? songs[i];
-                return ListTile(
-                  selected: i == currentSong,
-                  leading: CircleAvatar(radius: 14, child: Text('${i + 1}', style: const TextStyle(fontSize: 12))),
-                  title: Text(s.title),
-                  subtitle: Text('${s.pageCount} pages'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _goToFlat(_offsets[i]);
-                  },
-                );
-              },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Text(widget.args.setlistName ?? '', style: Theme.of(context).textTheme.titleLarge),
             ),
-          ),
-        ]),
+            Expanded(
+              child: ListView.builder(
+                itemCount: songs.length,
+                itemBuilder: (context, i) {
+                  final s = ref.read(songByIdProvider)[songs[i].id] ?? songs[i];
+                  return ListTile(
+                    selected: i == currentSong,
+                    leading: CircleAvatar(radius: 14, child: Text('${i + 1}', style: const TextStyle(fontSize: 12))),
+                    title: Text(s.title),
+                    subtitle: Text('${s.pageCount} pages'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _goToFlat(_offsets[i]);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -832,24 +934,32 @@ class _ScrubberStrip extends StatelessWidget {
             onTap: () => onTap(i),
             child: Padding(
               padding: EdgeInsets.only(left: songStarts.contains(i) && i > 0 ? 10 : 4, right: 4, bottom: 4),
-              child: Column(children: [
-                Expanded(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: active ? scheme.primary : scheme.outlineVariant, width: active ? 3 : 1),
-                      borderRadius: BorderRadius.circular(6),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: active ? scheme.primary : scheme.outlineVariant,
+                          width: active ? 3 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: ClipRRect(borderRadius: BorderRadius.circular(4), child: builder(i)),
                     ),
-                    child: ClipRRect(borderRadius: BorderRadius.circular(4), child: builder(i)),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(labelOf(i),
+                  const SizedBox(height: 4),
+                  Text(
+                    labelOf(i),
                     style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: active ? FontWeight.bold : FontWeight.normal,
-                        color: active ? scheme.primary : scheme.onSurfaceVariant)),
-              ]),
+                      fontSize: 12,
+                      fontWeight: active ? FontWeight.bold : FontWeight.normal,
+                      color: active ? scheme.primary : scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
