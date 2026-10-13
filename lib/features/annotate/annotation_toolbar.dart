@@ -93,6 +93,7 @@ class AnnotationToolbar extends StatelessWidget {
                             const _Sep(),
                             _Flyout<int>(
                               tooltip: 'Thickness',
+                              ordered: true,
                               options: const [0, 1, 2],
                               selected: tools.widthIndex,
                               onSelected: (i) => tools.widthIndex = i,
@@ -182,7 +183,12 @@ class _Flyout<T> extends StatefulWidget {
     required this.onSelected,
     required this.itemBuilder,
     this.onTapCurrent,
+    this.ordered = false,
   });
+
+  /// Fold out every option in their original order (current one highlighted)
+  /// instead of only the others; for options with a natural order like sizes.
+  final bool ordered;
 
   final String tooltip;
   final List<T> options;
@@ -208,7 +214,7 @@ class _FlyoutState<T> extends State<_Flyout<T>> {
   Widget build(BuildContext context) {
     final others = [
       for (final o in widget.options)
-        if (o != widget.selected) o,
+        if (widget.ordered || o != widget.selected) o,
     ];
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
     return Row(
@@ -254,7 +260,7 @@ class _FlyoutState<T> extends State<_Flyout<T>> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     for (final o in others)
-                      _tappable(o, false, () {
+                      _tappable(o, o == widget.selected, () {
                         widget.onSelected(o);
                         setState(() => _open = false);
                       }),
