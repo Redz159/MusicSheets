@@ -325,7 +325,7 @@ class MetronomePanel extends StatelessWidget {
                                 HapticFeedback.selectionClick();
                                 metronome.tap();
                               },
-                              child: const Text('Tap tempo'),
+                              child: Text(metronome.tapping ? 'Keep tapping…' : 'Tap tempo'),
                             ),
                           ),
                           const SizedBox(width: 10),

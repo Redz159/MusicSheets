@@ -268,7 +268,8 @@ class Metronome extends ChangeNotifier {
     if (_running) {
       final h = _handle;
       if (h != null) SoLoud.instance.setVolume(h, next.volume);
-      if (soundChanged) {
+      // While tapping the click stays silent; it resumes when the taps stop.
+      if (soundChanged && !_tapping) {
         // Debounced so dragging the tempo slider doesn't rebuild on every frame.
         _rebuild?.cancel();
         _rebuild = Timer(const Duration(milliseconds: 120), _play);
@@ -279,9 +280,43 @@ class Metronome extends ChangeNotifier {
 
   void setBpm(int bpm) => update((s) => s.copyWith(bpm: bpm));
 
+  bool _tapping = false;
+  Timer? _tapEnd;
+
+  /// True while tap tempo has silenced a running metronome.
+  bool get tapping => _tapping;
+
+  /// Hearing clicks while tapping throws you off, so a running metronome goes quiet
+  /// and comes back in on the tapped grid, two beats after the last tap.
   void tap() {
     final bpm = tapTempo.tap();
-    if (bpm != null) setBpm(bpm);
+    if (_running) {
+      if (!_tapping) {
+        _tapping = true;
+        _silence();
+      }
+      _tapEnd?.cancel();
+      final beat = Duration(microseconds: (60e6 / (bpm ?? _settings.bpm)).round());
+      _tapEnd = Timer(beat * 2, () {
+        _tapping = false;
+        if (_running) _play();
+        notifyListeners();
+      });
+    }
+    if (bpm != null) {
+      setBpm(bpm);
+    } else {
+      notifyListeners();
+    }
+  }
+
+  void _silence() {
+    _rebuild?.cancel();
+    _generation++; // drops a load that is still in flight
+    final (handle, source) = (_handle, _source);
+    _handle = null;
+    _source = null;
+    _release(handle, source);
   }
 
   Future<void> toggle() => _running ? stop() : start();
@@ -295,6 +330,8 @@ class Metronome extends ChangeNotifier {
 
   Future<void> stop() async {
     _rebuild?.cancel();
+    _tapEnd?.cancel();
+    _tapping = false;
     _running = false;
     _generation++;
     if (!_disposed) notifyListeners();
