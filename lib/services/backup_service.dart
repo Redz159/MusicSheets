@@ -36,6 +36,7 @@ class BackupService {
     await enc.addFile(File(dbCopy), dbFileName);
     final lib = Directory(paths.libraryDir);
     for (final f in lib.listSync().whereType<File>()) {
+      if (AppPaths.isCover(p.basename(f.path))) continue; // covers are re-fetched after a restore
       // PDFs are already compressed; storing them is much faster than deflating again.
       await enc.addFile(f, 'library/${p.basename(f.path)}', 0);
     }

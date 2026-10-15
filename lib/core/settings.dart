@@ -26,6 +26,8 @@ class AppSettings {
     this.keepScreenOn = true,
     this.swapPedal = false,
     this.libraryGrid = false,
+    this.fetchMetadata = true,
+    this.metadataWifiOnly = true,
   });
 
   final ThemeMode themeMode;
@@ -45,6 +47,10 @@ class AppSettings {
   final bool swapPedal;
   final bool libraryGrid;
 
+  /// Look songs up online (MusicBrainz, GetSongBPM). Off = no requests, no badges.
+  final bool fetchMetadata;
+  final bool metadataWifiOnly;
+
   AppSettings copyWith({
     ThemeMode? themeMode,
     SongSort? librarySort,
@@ -56,6 +62,8 @@ class AppSettings {
     bool? keepScreenOn,
     bool? swapPedal,
     bool? libraryGrid,
+    bool? fetchMetadata,
+    bool? metadataWifiOnly,
   }) =>
       AppSettings(
         themeMode: themeMode ?? this.themeMode,
@@ -68,6 +76,8 @@ class AppSettings {
         keepScreenOn: keepScreenOn ?? this.keepScreenOn,
         swapPedal: swapPedal ?? this.swapPedal,
         libraryGrid: libraryGrid ?? this.libraryGrid,
+        fetchMetadata: fetchMetadata ?? this.fetchMetadata,
+        metadataWifiOnly: metadataWifiOnly ?? this.metadataWifiOnly,
       );
 }
 
@@ -94,6 +104,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
       keepScreenOn: p.getBool('keepScreenOn') ?? true,
       swapPedal: p.getBool('swapPedal') ?? false,
       libraryGrid: p.getBool('libraryGrid') ?? false,
+      fetchMetadata: p.getBool('fetchMetadata') ?? true,
+      metadataWifiOnly: p.getBool('metadataWifiOnly') ?? true,
     );
   }
 
@@ -109,7 +121,9 @@ class SettingsNotifier extends Notifier<AppSettings> {
       ..setString('pageTint', s.pageTint.name)
       ..setBool('keepScreenOn', s.keepScreenOn)
       ..setBool('swapPedal', s.swapPedal)
-      ..setBool('libraryGrid', s.libraryGrid);
+      ..setBool('libraryGrid', s.libraryGrid)
+      ..setBool('fetchMetadata', s.fetchMetadata)
+      ..setBool('metadataWifiOnly', s.metadataWifiOnly);
   }
 
   void set(AppSettings Function(AppSettings s) change) => update(change(state));

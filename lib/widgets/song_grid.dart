@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/db.dart';
 import '../data/providers.dart';
 import '../services/services.dart';
+import 'metadata_widgets.dart';
 
 class SongThumbnail extends ConsumerStatefulWidget {
   const SongThumbnail({super.key, required this.song});
@@ -105,6 +106,9 @@ class SongGrid extends StatelessWidget {
                   borderRadius: BorderRadius.circular(9),
                   child: Stack(fit: StackFit.expand, children: [
                     Hero(tag: 'song-${s.id}', child: SongThumbnail(song: s)),
+                    if (s.coverFileName != null)
+                      Positioned(left: 6, bottom: 6, child: CoverImage(song: s, size: 44)),
+                    if (s.lookupStatus == 'needsReview') Positioned(left: 4, top: 4, child: ReviewBadge(song: s)),
                     if (isSelected)
                       Positioned(
                         right: 6,

@@ -5,7 +5,9 @@ import '../../core/settings.dart';
 import '../../core/sorting.dart';
 import '../../data/db.dart';
 import '../../data/providers.dart';
+import '../../services/services.dart';
 import '../../widgets/dialogs.dart';
+import '../../widgets/metadata_widgets.dart';
 import '../../widgets/song_actions.dart';
 import '../../widgets/song_grid.dart';
 import '../../widgets/song_list.dart';
@@ -23,6 +25,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   final _tagFilter = <int>{};
   final _selected = <int>{};
   bool _searching = false;
+  bool _reviewOnly = false;
 
   void _toggleSelect(Song s) => setState(() => _selected.contains(s.id) ? _selected.remove(s.id) : _selected.add(s.id));
 
@@ -37,8 +40,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         null, (best, s) => best == null || s.lastOpenedAt!.isAfter(best.lastOpenedAt!) ? s : best);
 
     List<String> tagNames(Song s) => [for (final t in songTags[s.id] ?? const <Tag>[]) t.name];
+    final reviewCount = ref.watch(reviewSongsProvider).length;
+    if (_reviewOnly && reviewCount == 0) _reviewOnly = false;
     final visible = sortSongs(
       all.where((s) =>
+          (!_reviewOnly || s.lookupStatus == 'needsReview') &&
           matchesQuery(s, _query, tagNames(s)) &&
           (_tagFilter.isEmpty || (songTags[s.id] ?? const []).any((t) => _tagFilter.contains(t.id)))),
       settings.librarySort,
@@ -66,6 +72,19 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 label: const Text('Import PDFs'),
               ),
         body: Column(children: [
+          if (reviewCount > 0)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: FilterChip(
+                  avatar: const Icon(Icons.help_outline, size: 18),
+                  label: Text('Needs review ($reviewCount)'),
+                  selected: _reviewOnly,
+                  onSelected: (on) => setState(() => _reviewOnly = on),
+                ),
+              ),
+            ),
           if (tags.isNotEmpty && all.isNotEmpty)
             SizedBox(
               height: 52,
@@ -140,7 +159,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               controller: _search,
               autofocus: true,
               decoration: const InputDecoration(
-                hintText: 'Search title, composer, tags…',
+                hintText: 'Search title, composer, artist, tags…',
                 filled: false,
                 border: InputBorder.none,
               ),
@@ -223,6 +242,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           icon: const Icon(Icons.label_outline),
           onPressed: () async {
             await tagSongs(context, ref, ids);
+            setState(_selected.clear);
+          },
+        ),
+        IconButton(
+          tooltip: 'Fetch metadata',
+          icon: const Icon(Icons.cloud_download_outlined),
+          onPressed: () async {
+            await fetchMetadataFor(context, ref, ids);
             setState(_selected.clear);
           },
         ),

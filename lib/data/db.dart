@@ -23,6 +23,30 @@ class Songs extends Table {
   DateTimeColumn get lastOpenedAt => dateTime().nullable()();
   IntColumn get openCount => integer().withDefault(const Constant(0))();
   IntColumn get lastPage => integer().withDefault(const Constant(0))();
+
+  // Online metadata lookup (see lib/services/metadata).
+  TextColumn get artist => text().withDefault(const Constant(''))();
+  IntColumn get year => integer().nullable()();
+  TextColumn get genre => text().withDefault(const Constant(''))();
+  TextColumn get album => text().withDefault(const Constant(''))();
+
+  /// Cover image file name relative to the library directory. Not part of backups.
+  TextColumn get coverFileName => text().nullable()();
+
+  /// The title as generated at import. Null for songs imported before lookups existed;
+  /// those are never renamed by a lookup.
+  TextColumn get importTitle => text().nullable()();
+  TextColumn get mbRecordingId => text().nullable()();
+  TextColumn get mbWorkId => text().nullable()();
+  TextColumn get mbReleaseGroupId => text().nullable()();
+
+  /// One of [LookupStatus.name].
+  TextColumn get lookupStatus => text().withDefault(const Constant('pending'))();
+  IntColumn get lookupAttempts => integer().withDefault(const Constant(0))();
+  DateTimeColumn get nextAttemptAt => dateTime().nullable()();
+
+  /// JSON list of candidates while the status is needsReview.
+  TextColumn get lookupCandidates => text().nullable()();
 }
 
 class Folders extends Table {
@@ -112,15 +136,33 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase open(String dbPath) => AppDatabase(NativeDatabase.createInBackground(File(dbPath)));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onUpgrade: (m, from, to) async {
           if (from < 2) await m.createTable(audioClips);
+          if (from < 3) {
+            // Every pre-existing song starts as 'pending' (the column default) and is backfilled.
+            await m.addColumn(songs, songs.artist);
+            await m.addColumn(songs, songs.year);
+            await m.addColumn(songs, songs.genre);
+            await m.addColumn(songs, songs.album);
+            await m.addColumn(songs, songs.coverFileName);
+            await m.addColumn(songs, songs.importTitle);
+            await m.addColumn(songs, songs.mbRecordingId);
+            await m.addColumn(songs, songs.mbWorkId);
+            await m.addColumn(songs, songs.mbReleaseGroupId);
+            await m.addColumn(songs, songs.lookupStatus);
+            await m.addColumn(songs, songs.lookupAttempts);
+            await m.addColumn(songs, songs.nextAttemptAt);
+            await m.addColumn(songs, songs.lookupCandidates);
+          }
         },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');
+          // The background worker opens its own connection to the same file.
+          await customStatement('PRAGMA busy_timeout = 5000');
         },
       );
 
@@ -152,6 +194,55 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> saveLastPage(int id, int page) =>
       (update(songs)..where((s) => s.id.equals(id))).write(SongsCompanion(lastPage: Value(page)));
+
+  /// The next pending song whose retry time has come, oldest first.
+  Future<Song?> nextDueSong(DateTime now) => (select(songs)
+        ..where((s) => s.lookupStatus.equals('pending') & (s.nextAttemptAt.isNull() | s.nextAttemptAt.isSmallerOrEqualValue(now)))
+        ..orderBy([(s) => OrderingTerm.asc(s.id)])
+        ..limit(1))
+      .getSingleOrNull();
+
+  /// Earliest retry time among pending songs that are waiting for a backoff, if any.
+  Future<DateTime?> earliestRetry() async {
+    final t = songs.nextAttemptAt.min();
+    final row = await (selectOnly(songs)
+          ..addColumns([t])
+          ..where(songs.lookupStatus.equals('pending') & songs.nextAttemptAt.isNotNull()))
+        .getSingle();
+    return row.read(t);
+  }
+
+  Future<int> countByLookupStatus(String status) async {
+    final c = songs.id.count();
+    final row = await (selectOnly(songs)
+          ..addColumns([c])
+          ..where(songs.lookupStatus.equals(status)))
+        .getSingle();
+    return row.read(c) ?? 0;
+  }
+
+  /// Puts songs back into the lookup queue (manual "Fetch metadata").
+  Future<void> requeueSongs(List<int> ids) => (update(songs)..where((s) => s.id.isIn(ids))).write(
+        const SongsCompanion(
+          lookupStatus: Value('pending'),
+          lookupAttempts: Value(0),
+          nextAttemptAt: Value(null),
+          lookupCandidates: Value(null),
+        ),
+      );
+
+  /// After a restore: songs whose cover file is gone go back into the queue.
+  Future<void> requeueSongsWithMissingCovers(bool Function(String fileName) exists) async {
+    final rows = await (select(songs)..where((s) => s.coverFileName.isNotNull())).get();
+    final missing = [for (final s in rows) if (!exists(s.coverFileName!)) s.id];
+    if (missing.isEmpty) return;
+    await (update(songs)..where((s) => s.id.isIn(missing))).write(const SongsCompanion(
+      coverFileName: Value(null),
+      lookupStatus: Value('pending'),
+      lookupAttempts: Value(0),
+      nextAttemptAt: Value(null),
+    ));
+  }
 
   Future<void> deleteSongs(List<int> ids) => (delete(songs)..where((s) => s.id.isIn(ids))).go();
 
