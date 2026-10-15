@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/settings.dart';
@@ -49,8 +50,9 @@ final lookupControllerProvider = Provider<LookupController>((ref) {
   return c;
 });
 
-class LookupController {
+class LookupController with WidgetsBindingObserver {
   LookupController(this._ref) {
+    WidgetsBinding.instance.addObserver(this);
     _ref.listen(settingsProvider.select((s) => (s.fetchMetadata, s.metadataWifiOnly)), (_, _) => _sync(), fireImmediately: true);
     // New or re-queued songs wake the worker.
     _ref.listen(songsProvider.select((a) => a.value?.where((s) => s.lookupStatus == 'pending').length ?? 0),
@@ -77,5 +79,12 @@ class LookupController {
     kick();
   }
 
-  void dispose() {}
+  /// iOS runs the background task only when it sees fit, so coming back to the app always
+  /// catches the queue up.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) kick();
+  }
+
+  void dispose() => WidgetsBinding.instance.removeObserver(this);
 }
