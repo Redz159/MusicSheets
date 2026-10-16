@@ -80,8 +80,7 @@ class LookupController with WidgetsBindingObserver {
     kick();
   }
 
-  /// iOS runs the background task only when it sees fit, so coming back to the app always
-  /// catches the queue up.
+  /// The OS may defer background work, so catch the queue up when returning to the app.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) kick();

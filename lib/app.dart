@@ -1,5 +1,4 @@
 import 'package:animations/animations.dart';
-import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -75,7 +74,6 @@ ThemeData buildTheme(Brightness brightness) {
     visualDensity: VisualDensity.standard,
     pageTransitionsTheme: const PageTransitionsTheme(builders: {
       TargetPlatform.android: SharedAxisPageTransitionsBuilder(transitionType: SharedAxisTransitionType.horizontal),
-      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
     }),
     appBarTheme: AppBarTheme(
       backgroundColor: scheme.surface,

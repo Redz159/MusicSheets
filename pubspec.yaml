@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.10.7
+  sdk: ^3.13.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -38,7 +38,7 @@ dependencies:
   go_router: ^17.5.0
   drift: ">=2.30.0 <2.34.0"
   sqlite3_flutter_libs: 0.5.40
-  pdfrx: ^2.2.24
+  pdfrx: ^2.6.5
   syncfusion_flutter_pdf: ^33.2.13
   perfect_freehand: ^2.5.2+1
   file_picker: ^13.1.0

@@ -2,7 +2,7 @@
 
 A sheet music library for tablets, built with Flutter. Import PDFs, organise them into folders and setlists, annotate them, play along with a metronome or recordings, and optionally fetch song metadata from MusicBrainz.
 
-Runs on Android and on iPadOS 26 and above (iPhone builds too, but iPad is the focus).
+Runs on Android and on iPadOS 15 and above (iPhone builds too, but iPad is the focus).
 
 ## Installing on an iPad
 
@@ -10,7 +10,7 @@ The app is not on the App Store. The release IPA is unsigned on purpose, so you 
 
 ### Requirements
 
-- iPad running **iPadOS 26 or later**
+- iPad running **iPadOS 15 or later**
 - A Mac or Windows PC to install from
 - A free Apple ID is enough. Apps signed with a free Apple ID **expire after 7 days** and have to be re-signed; a paid Apple Developer account lasts a year.
 
@@ -35,7 +35,7 @@ When the 7 days are up the app stops launching. Re-install or refresh it with th
 
 ### Option B: Build and install from source
 
-You need a Mac with Xcode (with the iOS 26 SDK), [Flutter](https://docs.flutter.dev/get-started/install) (the release workflow uses 3.47.7) and CocoaPods.
+You need a Mac with Xcode and an iOS Simulator runtime, [Flutter](https://docs.flutter.dev/get-started/install) (the release workflow uses 3.47.7) and CocoaPods.
 
 ```sh
 git clone https://github.com/Redz159/MusicSheets.git
