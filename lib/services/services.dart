@@ -30,7 +30,8 @@ final lookupRunnerProvider = Provider((ref) {
     enabled: () => ref.read(settingsProvider).fetchMetadata,
     wifiOnly: () => ref.read(settingsProvider).metadataWifiOnly,
   );
-  ref.onDispose(runner.stop);
+  runner.watchConnectivity();
+  ref.onDispose(runner.dispose);
   return runner;
 });
 

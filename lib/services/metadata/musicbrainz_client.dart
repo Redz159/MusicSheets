@@ -8,7 +8,7 @@ import 'models.dart';
 import 'query_builder.dart';
 import 'rate_limiter.dart';
 
-const userAgent = 'MusicSheets/1.0 ( https://github.com/Ncorrex/MusicSheets )';
+const userAgent = 'MusicSheets/1.0 ( https://github.com/Redz159/MusicSheets )';
 const _secondaryExcluded = {'live', 'compilation', 'karaoke', 'dj-mix', 'mixtape/street', 'demo', 'remix'};
 const _primaryAllowed = {'album', 'single', 'ep'};
 

@@ -23,6 +23,7 @@ class LookupRunner {
   final bool Function() wifiOnly;
   final Future<bool> Function(bool wifiOnly) _network;
 
+  StreamSubscription<List<ConnectivityResult>>? _connectivity;
   bool _running = false;
   bool _stop = false;
   Timer? _retryTimer;
@@ -35,6 +36,7 @@ class LookupRunner {
     if (_running) return false;
     _running = true;
     _stop = false;
+    _retryTimer?.cancel();
     final started = DateTime.now();
     try {
       while (!_stop && enabled()) {
@@ -53,6 +55,14 @@ class LookupRunner {
     }
   }
 
+  /// Restarts the queue when the connection changes, so a run that gave up for lack of a
+  /// (Wi-Fi) connection continues as soon as one is there. Safe to call repeatedly.
+  void watchConnectivity({Stream<List<ConnectivityResult>>? changes}) {
+    _connectivity ??= (changes ?? Connectivity().onConnectivityChanged).listen((_) {
+      if (!_running && enabled()) unawaited(run());
+    });
+  }
+
   Future<void> _scheduleRetry() async {
     final next = await service.db.earliestRetry();
     if (next == null) return;
@@ -64,5 +74,11 @@ class LookupRunner {
   void stop() {
     _stop = true;
     _retryTimer?.cancel();
+  }
+
+  void dispose() {
+    stop();
+    _connectivity?.cancel();
+    _connectivity = null;
   }
 }

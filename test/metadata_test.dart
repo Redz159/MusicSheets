@@ -1,14 +1,19 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:image/image.dart' as img;
 import 'package:music_sheets/data/db.dart';
 import 'package:music_sheets/data/providers.dart';
 import 'package:music_sheets/services/metadata/cover_art.dart';
+import 'package:music_sheets/services/metadata/lookup_runner.dart';
 import 'package:music_sheets/services/metadata/lookup_service.dart';
 import 'package:music_sheets/services/metadata/matcher.dart';
 import 'package:music_sheets/services/metadata/models.dart';
@@ -534,18 +539,112 @@ void main() {
   });
 
   group('database', () {
-    test('missing covers are requeued after a restore', () async {
+    test('a claimed song is not handed out again until its lease runs out', () async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
-      final a = await db.insertSong(SongsCompanion.insert(title: 'a', fileName: 'a.pdf', fileHash: 'a', createdAt: DateTime(2026)));
-      final b = await db.insertSong(SongsCompanion.insert(title: 'b', fileName: 'b.pdf', fileHash: 'b', createdAt: DateTime(2026)));
+      final now = DateTime(2026, 10, 15, 12);
+      final id = await db.insertSong(SongsCompanion.insert(title: 'a', fileName: 'a.pdf', fileHash: 'a', createdAt: now));
+      expect((await db.claimNextDue(now))?.id, id);
+      expect(await db.claimNextDue(now), isNull); // e.g. the other isolate
+      expect((await db.claimNextDue(now.add(const Duration(minutes: 11))))?.id, id); // crashed run: lease expired
+    });
+  });
+
+  group('restore', () {
+    late AppDatabase db;
+    late Directory dir;
+    late AppPaths paths;
+
+    setUp(() {
+      db = AppDatabase(NativeDatabase.memory());
+      dir = Directory.systemTemp.createTempSync('restore_test');
+      paths = AppPaths(root: dir.path, cache: dir.path);
+      Directory(paths.libraryDir).createSync(recursive: true);
+    });
+    tearDown(() async {
+      await db.close();
+      dir.deleteSync(recursive: true);
+    });
+
+    LookupService service(http.Client client) => LookupService(db, paths,
+        musicBrainz: MusicBrainzClient(client, limiter: RateLimiter(Duration.zero)),
+        tempoKey: TempoKeyClient(client),
+        covers: CoverArtService(client));
+
+    Future<int> matched(String name, {String? group, bool coverOnDisk = false}) async {
+      final id = await db.insertSong(SongsCompanion.insert(title: name, fileName: '$name.pdf', fileHash: name, createdAt: DateTime(2026)));
+      await db.updateSong(id, SongsCompanion(
+        lookupStatus: const Value('matched'),
+        coverFileName: Value('$name-cover.jpg'),
+        mbReleaseGroupId: Value(group),
+      ));
+      if (coverOnDisk) File(paths.pdf('$name-cover.jpg')).writeAsBytesSync([1]);
+      return id;
+    }
+
+    test('missing covers are downloaded again; matches stay as they were', () async {
+      final png = Uint8List.fromList(img.encodePng(img.Image(width: 4, height: 4)));
+      final asked = <String>[];
+      final svc = service(MockClient((r) async {
+        asked.add(r.url.path);
+        return http.Response.bytes(png, 200);
+      }));
+      final a = await matched('a', group: 'rg-a');
+      final b = await matched('b', group: 'rg-b', coverOnDisk: true);
+      await svc.restoreMissingCovers();
+      expect(File(paths.pdf('a-cover.jpg')).existsSync(), isTrue);
+      expect(asked, ['/release-group/rg-a/front-500']);
       for (final id in [a, b]) {
-        await db.updateSong(id, SongsCompanion(lookupStatus: const Value('matched'), coverFileName: Value('$id-cover.jpg')));
+        final s = (await db.songById(id))!;
+        expect(s.lookupStatus, 'matched');
+        expect(s.coverFileName, isNotNull);
       }
-      await db.requeueSongsWithMissingCovers((name) => name == '$b-cover.jpg');
-      expect((await db.songById(a))!.lookupStatus, 'pending');
-      expect((await db.songById(a))!.coverFileName, isNull);
-      expect((await db.songById(b))!.lookupStatus, 'matched');
+    });
+
+    test('a song without a release group, or when offline, only loses the dangling reference', () async {
+      final svc = service(MockClient((r) async => throw const SocketException('offline')));
+      final a = await matched('a'); // no release group
+      final b = await matched('b', group: 'rg-b');
+      await svc.restoreMissingCovers();
+      for (final id in [a, b]) {
+        final s = (await db.songById(id))!;
+        expect(s.lookupStatus, 'matched');
+        expect(s.coverFileName, isNull);
+      }
+    });
+  });
+
+  group('runner', () {
+    test('resumes when the network comes back', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final dir = Directory.systemTemp.createTempSync('runner_test');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final client = MockClient((r) async => http.Response('{"recordings":[]}', 200));
+      final svc = LookupService(db, AppPaths(root: dir.path, cache: dir.path),
+          musicBrainz: MusicBrainzClient(client, limiter: RateLimiter(Duration.zero)),
+          tempoKey: TempoKeyClient(client),
+          covers: CoverArtService(client),
+          readHeader: (_) async => null);
+      final id = await db.insertSong(SongsCompanion.insert(title: 'x', fileName: 'x.pdf', fileHash: 'x', createdAt: DateTime(2026)));
+      var online = false;
+      final runner = LookupRunner(svc, enabled: () => true, wifiOnly: () => true, network: (_) async => online);
+      final changes = StreamController<List<ConnectivityResult>>();
+      runner.watchConnectivity(changes: changes.stream);
+      addTearDown(() async {
+        runner.dispose();
+        await changes.close();
+      });
+
+      expect(await runner.run(), isFalse); // offline: gives up, song untouched
+      expect((await db.songById(id))!.lookupStatus, 'pending');
+
+      online = true;
+      changes.add([ConnectivityResult.wifi]);
+      for (var i = 0; i < 50 && (await db.songById(id))!.lookupStatus == 'pending'; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      expect((await db.songById(id))!.lookupStatus, 'notFound');
     });
   });
 }
