@@ -202,6 +202,24 @@ class AppDatabase extends _$AppDatabase {
         ..limit(1))
       .getSingleOrNull();
 
+  /// Claims the next due song for processing. The claim is a lease: the song stays pending but is not
+  /// due again until [lease] has passed, so a second isolate (foreground vs. background) skips it, and
+  /// a run that dies half-way hands the song back automatically. Every outcome of a lookup overwrites
+  /// the lease. The conditional UPDATE is atomic, so two isolates never claim the same song.
+  Future<Song?> claimNextDue(DateTime now, {Duration lease = const Duration(minutes: 10)}) async {
+    while (true) {
+      final song = await nextDueSong(now);
+      if (song == null) return null;
+      final claimed = await (update(songs)
+            ..where((s) =>
+                s.id.equals(song.id) &
+                s.lookupStatus.equals('pending') &
+                (s.nextAttemptAt.isNull() | s.nextAttemptAt.isSmallerOrEqualValue(now))))
+          .write(SongsCompanion(nextAttemptAt: Value(now.add(lease))));
+      if (claimed == 1) return song;
+    }
+  }
+
   /// Earliest retry time among pending songs that are waiting for a backoff, if any.
   Future<DateTime?> earliestRetry() async {
     final t = songs.nextAttemptAt.min();
@@ -231,18 +249,8 @@ class AppDatabase extends _$AppDatabase {
         ),
       );
 
-  /// After a restore: songs whose cover file is gone go back into the queue.
-  Future<void> requeueSongsWithMissingCovers(bool Function(String fileName) exists) async {
-    final rows = await (select(songs)..where((s) => s.coverFileName.isNotNull())).get();
-    final missing = [for (final s in rows) if (!exists(s.coverFileName!)) s.id];
-    if (missing.isEmpty) return;
-    await (update(songs)..where((s) => s.id.isIn(missing))).write(const SongsCompanion(
-      coverFileName: Value(null),
-      lookupStatus: Value('pending'),
-      lookupAttempts: Value(0),
-      nextAttemptAt: Value(null),
-    ));
-  }
+  /// Songs that reference a cover file.
+  Future<List<Song>> songsWithCover() => (select(songs)..where((s) => s.coverFileName.isNotNull())).get();
 
   Future<void> deleteSongs(List<int> ids) => (delete(songs)..where((s) => s.id.isIn(ids))).go();
 

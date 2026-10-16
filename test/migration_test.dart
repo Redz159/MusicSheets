@@ -19,7 +19,7 @@ void main() {
       INSERT INTO songs (title, composer, file_name, file_hash, created_at) VALUES ('My Song', 'Me', 'a.pdf', 'h', 1760000000);
       PRAGMA user_version = 2;
     ''');
-    old.close();
+    old.dispose();
 
     final db = AppDatabase(NativeDatabase(File(path)));
     addTearDown(db.close);

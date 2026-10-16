@@ -26,7 +26,7 @@ class AppSettings {
     this.keepScreenOn = true,
     this.swapPedal = false,
     this.libraryGrid = false,
-    this.fetchMetadata = true,
+    this.fetchMetadata = false,
     this.metadataWifiOnly = true,
   });
 
@@ -47,7 +47,7 @@ class AppSettings {
   final bool swapPedal;
   final bool libraryGrid;
 
-  /// Look songs up online (MusicBrainz, GetSongBPM). Off = no requests, no badges.
+  /// Look songs up online (MusicBrainz, AcousticBrainz, Deezer). Off = no requests, no badges.
   final bool fetchMetadata;
   final bool metadataWifiOnly;
 
@@ -104,7 +104,7 @@ class SettingsNotifier extends Notifier<AppSettings> {
       keepScreenOn: p.getBool('keepScreenOn') ?? true,
       swapPedal: p.getBool('swapPedal') ?? false,
       libraryGrid: p.getBool('libraryGrid') ?? false,
-      fetchMetadata: p.getBool('fetchMetadata') ?? true,
+      fetchMetadata: p.getBool('fetchMetadata') ?? false,
       metadataWifiOnly: p.getBool('metadataWifiOnly') ?? true,
     );
   }

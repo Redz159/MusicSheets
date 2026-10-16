@@ -7,7 +7,6 @@ import 'package:path/path.dart' as p;
 
 import '../../data/db.dart';
 import '../../data/providers.dart';
-import '../import_service.dart';
 import 'cover_art.dart';
 import 'matcher.dart';
 import 'models.dart';
@@ -86,7 +85,7 @@ class LookupService {
 
   /// Handles the next due song. Returns [StepOutcome.waiting] when only backed-off songs remain.
   Future<StepOutcome> processNext() async {
-    final song = await db.nextDueSong(now());
+    final song = await db.claimNextDue(now());
     if (song == null) return await db.earliestRetry() == null ? StepOutcome.idle : StepOutcome.waiting;
     await processSong(song);
     return StepOutcome.processed;
@@ -207,6 +206,27 @@ class LookupService {
     await _fetchCover(fresh, c.releaseGroupId);
   }
 
+  /// After a restore (covers are not in backups): downloads the missing covers again from the stored
+  /// release group. The lookup state of the songs stays as it was, so hand-picked matches survive.
+  Future<void> restoreMissingCovers() async {
+    var offline = false;
+    for (final song in await db.songsWithCover()) {
+      final name = song.coverFileName!;
+      if (await File(paths.pdf(name)).exists()) continue;
+      final group = song.mbReleaseGroupId;
+      var ok = false;
+      if (group != null && !offline) {
+        try {
+          ok = await covers.download(group, File(paths.pdf(name)));
+        } on TemporaryLookupError {
+          offline = true; // stop asking; the remaining songs only lose the dangling reference
+        }
+      }
+      // Without the reference a later "Fetch metadata" can fetch the cover again.
+      if (!ok) await db.updateSong(song.id, const SongsCompanion(coverFileName: Value(null)));
+    }
+  }
+
   Future<void> _fetchCover(Song song, String? releaseGroupId) async {
     if (releaseGroupId == null || song.coverFileName != null) return;
     try {
@@ -227,6 +247,3 @@ class LookupService {
   /// The user rejected every candidate.
   Future<void> markNotFound(int songId) => _finish(songId, LookupStatus.notFound);
 }
-
-/// Import-time helper: the generated title that a later lookup may replace.
-String importTitleFor(String fileName) => ImportService.titleFromFileName(fileName);

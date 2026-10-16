@@ -151,12 +151,27 @@ class _CandidateCover extends StatelessWidget {
   }
 }
 
+/// Online lookups are opt-in: asks once what may be sent and switches them on if the user agrees.
+/// Returns whether lookups are enabled afterwards.
+Future<bool> enableMetadataLookup(BuildContext context, WidgetRef ref) async {
+  if (ref.read(settingsProvider).fetchMetadata) return true;
+  final ok = await confirm(
+    context,
+    title: 'Look up song metadata online?',
+    message: 'Song titles, and artists printed on the sheets, are sent to MusicBrainz, AcousticBrainz and Deezer '
+        'to find composer, key, tempo, year, genre, album and cover art. This applies to your whole library, '
+        'including songs that are already in it. Nothing is sent while this is off.',
+    action: 'Turn on',
+    destructive: false,
+  );
+  if (!ok) return false;
+  ref.read(settingsProvider.notifier).set((s) => s.copyWith(fetchMetadata: true));
+  return true;
+}
+
 /// Puts songs back in the lookup queue and tells the user.
 Future<void> fetchMetadataFor(BuildContext context, WidgetRef ref, List<int> ids) async {
-  final settings = ref.read(settingsProvider);
-  if (!settings.fetchMetadata) {
-    ref.read(settingsProvider.notifier).set((s) => s.copyWith(fetchMetadata: true));
-  }
+  if (!await enableMetadataLookup(context, ref)) return;
   await ref.read(databaseProvider).requeueSongs(ids);
   if (context.mounted) {
     showSnack(context, ids.length == 1 ? 'Looking up this song…' : 'Looking up ${ids.length} songs…');

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +9,7 @@ import '../../data/providers.dart';
 import '../../services/backup_service.dart';
 import '../../services/services.dart';
 import '../../widgets/dialogs.dart';
+import '../../widgets/metadata_widgets.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -128,7 +129,7 @@ class SettingsScreen extends ConsumerWidget {
                   'Looks up composer, key, tempo, artist, year, genre, album and cover art. Song titles are sent to '
                   'MusicBrainz, AcousticBrainz and Deezer, also for your existing library.'),
               value: s.fetchMetadata,
-              onChanged: (v) => n.set((x) => x.copyWith(fetchMetadata: v)),
+              onChanged: (v) => v ? enableMetadataLookup(context, ref) : n.set((x) => x.copyWith(fetchMetadata: false)),
             ),
             SwitchListTile(
               title: const Text('Wi-Fi only'),
@@ -196,9 +197,8 @@ class SettingsScreen extends ConsumerWidget {
         await backup.install(dir);
         ref.read(libraryEpochProvider.notifier).bump();
       });
-      // Covers are not in backups: songs without their cover file go back into the lookup queue.
-      final paths = ref.read(appPathsProvider);
-      await ref.read(databaseProvider).requeueSongsWithMissingCovers((n) => File(paths.pdf(n)).existsSync());
+      // Covers are not in backups: download them again for songs that were already matched.
+      if (ref.read(settingsProvider).fetchMetadata) unawaited(ref.read(lookupServiceProvider).restoreMissingCovers());
       if (context.mounted) showSnack(context, 'Backup restored');
     } catch (e) {
       ref.read(libraryEpochProvider.notifier).bump();

@@ -17,13 +17,13 @@ const _uniqueName = 'metadata-lookup-queue';
 @pragma('vm:entry-point')
 void backgroundDispatcher() {
   Workmanager().executeTask((task, input) async {
-    if (task != lookupTaskName && task != Workmanager.iOSBackgroundTask) return true;
+    if (task != lookupTaskName) return true;
     WidgetsFlutterBinding.ensureInitialized();
     AppDatabase? db;
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.reload();
-      final enabled = prefs.getBool('fetchMetadata') ?? true;
+      final enabled = prefs.getBool('fetchMetadata') ?? false;
       if (!enabled) return true;
       final wifiOnly = prefs.getBool('metadataWifiOnly') ?? true;
       final paths = await AppPaths.resolve();
@@ -45,7 +45,9 @@ void backgroundDispatcher() {
 class BackgroundScheduler {
   static bool _initialized = false;
 
-  static bool get supported => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+  // TODO(iOS): background lookups are Android-only for now. iOS is out of scope for this change and
+  // tracked in a separate issue; the foreground runner still handles the queue there.
+  static bool get supported => !kIsWeb && Platform.isAndroid;
 
   static Future<void> init() async {
     if (!supported || _initialized) return;
@@ -56,21 +58,13 @@ class BackgroundScheduler {
   static Future<void> schedule({required bool wifiOnly}) async {
     if (!supported) return;
     await init();
-    if (Platform.isAndroid) {
-      await Workmanager().registerPeriodicTask(
-        _uniqueName,
-        lookupTaskName,
-        frequency: const Duration(minutes: 15),
-        existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
-        constraints: Constraints(networkType: wifiOnly ? NetworkType.unmetered : NetworkType.connected),
-      );
-    } else {
-      // iOS decides when this runs; the foreground runner covers the rest.
-      await Workmanager().registerPeriodicTask(_uniqueName, Workmanager.iOSBackgroundTask,
-          frequency: const Duration(hours: 1),
-          existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
-          constraints: Constraints(networkType: NetworkType.connected));
-    }
+    await Workmanager().registerPeriodicTask(
+      _uniqueName,
+      lookupTaskName,
+      frequency: const Duration(minutes: 15),
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
+      constraints: Constraints(networkType: wifiOnly ? NetworkType.unmetered : NetworkType.connected),
+    );
   }
 
   static Future<void> cancel() async {
