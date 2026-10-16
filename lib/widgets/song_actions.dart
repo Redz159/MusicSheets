@@ -10,6 +10,7 @@ import '../features/viewer/viewer_screen.dart';
 import '../services/import_service.dart';
 import '../services/services.dart';
 import 'dialogs.dart';
+import 'metadata_widgets.dart';
 import 'song_list.dart';
 
 void openSongs(BuildContext context, List<Song> songs, int index, {String? setlistName, bool resume = true}) {
@@ -240,6 +241,24 @@ Future<void> showSongMenu(BuildContext context, WidgetRef ref, Song song, {List<
             editSong(context, ref, song);
           },
         ),
+        if (song.lookupStatus == 'needsReview')
+          ListTile(
+            leading: const Icon(Icons.help_outline),
+            title: const Text('Choose the right match'),
+            onTap: () {
+              Navigator.pop(sheet);
+              chooseMatch(context, ref, song);
+            },
+          ),
+        ListTile(
+          leading: const Icon(Icons.cloud_download_outlined),
+          title: const Text('Fetch metadata'),
+          subtitle: const Text('Fills empty fields only'),
+          onTap: () {
+            Navigator.pop(sheet);
+            fetchMetadataFor(context, ref, [song.id]);
+          },
+        ),
         ListTile(
           leading: const Icon(Icons.create_new_folder_outlined),
           title: const Text('Add to folder'),
@@ -299,6 +318,10 @@ class _SongEditSheetState extends ConsumerState<SongEditSheet> {
   late final _key = TextEditingController(text: widget.song.musicalKey);
   late final _tempo = TextEditingController(text: widget.song.tempo?.toString() ?? '');
   late final _notes = TextEditingController(text: widget.song.notes);
+  late final _artist = TextEditingController(text: widget.song.artist);
+  late final _album = TextEditingController(text: widget.song.album);
+  late final _genre = TextEditingController(text: widget.song.genre);
+  late final _year = TextEditingController(text: widget.song.year?.toString() ?? '');
   Set<int>? _tagIds;
 
   Future<void> _save() async {
@@ -312,6 +335,10 @@ class _SongEditSheetState extends ConsumerState<SongEditSheet> {
         musicalKey: Value(_key.text.trim()),
         tempo: Value(int.tryParse(_tempo.text.trim())),
         notes: Value(_notes.text.trim()),
+        artist: Value(_artist.text.trim()),
+        album: Value(_album.text.trim()),
+        genre: Value(_genre.text.trim()),
+        year: Value(int.tryParse(_year.text.trim())),
       ),
     );
     if (_tagIds != null) await db.setSongTags(widget.song.id, _tagIds!);
@@ -351,6 +378,25 @@ class _SongEditSheetState extends ConsumerState<SongEditSheet> {
                 decoration: const InputDecoration(labelText: 'BPM'),
               ),
             ),
+          ]),
+          gap,
+          Row(children: [
+            Expanded(child: TextField(controller: _artist, decoration: const InputDecoration(labelText: 'Performed by'))),
+            gap,
+            SizedBox(
+              width: 110,
+              child: TextField(
+                controller: _year,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Year'),
+              ),
+            ),
+          ]),
+          gap,
+          Row(children: [
+            Expanded(child: TextField(controller: _album, decoration: const InputDecoration(labelText: 'Album'))),
+            gap,
+            Expanded(child: TextField(controller: _genre, decoration: const InputDecoration(labelText: 'Genre'))),
           ]),
           gap,
           TextField(controller: _notes, minLines: 2, maxLines: 5, decoration: const InputDecoration(labelText: 'Notes')),

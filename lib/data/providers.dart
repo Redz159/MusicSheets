@@ -18,6 +18,10 @@ class AppPaths {
   String get thumbDir => p.join(cache, 'thumbs');
   String pdf(String fileName) => p.join(libraryDir, fileName);
 
+  /// Cover images live next to the PDFs but are not part of backups.
+  static bool isCover(String fileName) => fileName.endsWith(coverSuffix);
+  static const coverSuffix = '-cover.jpg';
+
   static Future<AppPaths> resolve() async {
     final docs = await getApplicationDocumentsDirectory();
     final cache = await getApplicationCacheDirectory();

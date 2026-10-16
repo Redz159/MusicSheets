@@ -165,6 +165,147 @@ class $SongsTable extends Songs with TableInfo<$SongsTable, Song> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _artistMeta = const VerificationMeta('artist');
+  @override
+  late final GeneratedColumn<String> artist = GeneratedColumn<String>(
+    'artist',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _yearMeta = const VerificationMeta('year');
+  @override
+  late final GeneratedColumn<int> year = GeneratedColumn<int>(
+    'year',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _genreMeta = const VerificationMeta('genre');
+  @override
+  late final GeneratedColumn<String> genre = GeneratedColumn<String>(
+    'genre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _albumMeta = const VerificationMeta('album');
+  @override
+  late final GeneratedColumn<String> album = GeneratedColumn<String>(
+    'album',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _coverFileNameMeta = const VerificationMeta(
+    'coverFileName',
+  );
+  @override
+  late final GeneratedColumn<String> coverFileName = GeneratedColumn<String>(
+    'cover_file_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _importTitleMeta = const VerificationMeta(
+    'importTitle',
+  );
+  @override
+  late final GeneratedColumn<String> importTitle = GeneratedColumn<String>(
+    'import_title',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _mbRecordingIdMeta = const VerificationMeta(
+    'mbRecordingId',
+  );
+  @override
+  late final GeneratedColumn<String> mbRecordingId = GeneratedColumn<String>(
+    'mb_recording_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _mbWorkIdMeta = const VerificationMeta(
+    'mbWorkId',
+  );
+  @override
+  late final GeneratedColumn<String> mbWorkId = GeneratedColumn<String>(
+    'mb_work_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _mbReleaseGroupIdMeta = const VerificationMeta(
+    'mbReleaseGroupId',
+  );
+  @override
+  late final GeneratedColumn<String> mbReleaseGroupId = GeneratedColumn<String>(
+    'mb_release_group_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lookupStatusMeta = const VerificationMeta(
+    'lookupStatus',
+  );
+  @override
+  late final GeneratedColumn<String> lookupStatus = GeneratedColumn<String>(
+    'lookup_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _lookupAttemptsMeta = const VerificationMeta(
+    'lookupAttempts',
+  );
+  @override
+  late final GeneratedColumn<int> lookupAttempts = GeneratedColumn<int>(
+    'lookup_attempts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _nextAttemptAtMeta = const VerificationMeta(
+    'nextAttemptAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> nextAttemptAt =
+      GeneratedColumn<DateTime>(
+        'next_attempt_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lookupCandidatesMeta = const VerificationMeta(
+    'lookupCandidates',
+  );
+  @override
+  late final GeneratedColumn<String> lookupCandidates = GeneratedColumn<String>(
+    'lookup_candidates',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -181,6 +322,19 @@ class $SongsTable extends Songs with TableInfo<$SongsTable, Song> {
     lastOpenedAt,
     openCount,
     lastPage,
+    artist,
+    year,
+    genre,
+    album,
+    coverFileName,
+    importTitle,
+    mbRecordingId,
+    mbWorkId,
+    mbReleaseGroupId,
+    lookupStatus,
+    lookupAttempts,
+    nextAttemptAt,
+    lookupCandidates,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -286,6 +440,108 @@ class $SongsTable extends Songs with TableInfo<$SongsTable, Song> {
         lastPage.isAcceptableOrUnknown(data['last_page']!, _lastPageMeta),
       );
     }
+    if (data.containsKey('artist')) {
+      context.handle(
+        _artistMeta,
+        artist.isAcceptableOrUnknown(data['artist']!, _artistMeta),
+      );
+    }
+    if (data.containsKey('year')) {
+      context.handle(
+        _yearMeta,
+        year.isAcceptableOrUnknown(data['year']!, _yearMeta),
+      );
+    }
+    if (data.containsKey('genre')) {
+      context.handle(
+        _genreMeta,
+        genre.isAcceptableOrUnknown(data['genre']!, _genreMeta),
+      );
+    }
+    if (data.containsKey('album')) {
+      context.handle(
+        _albumMeta,
+        album.isAcceptableOrUnknown(data['album']!, _albumMeta),
+      );
+    }
+    if (data.containsKey('cover_file_name')) {
+      context.handle(
+        _coverFileNameMeta,
+        coverFileName.isAcceptableOrUnknown(
+          data['cover_file_name']!,
+          _coverFileNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('import_title')) {
+      context.handle(
+        _importTitleMeta,
+        importTitle.isAcceptableOrUnknown(
+          data['import_title']!,
+          _importTitleMeta,
+        ),
+      );
+    }
+    if (data.containsKey('mb_recording_id')) {
+      context.handle(
+        _mbRecordingIdMeta,
+        mbRecordingId.isAcceptableOrUnknown(
+          data['mb_recording_id']!,
+          _mbRecordingIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('mb_work_id')) {
+      context.handle(
+        _mbWorkIdMeta,
+        mbWorkId.isAcceptableOrUnknown(data['mb_work_id']!, _mbWorkIdMeta),
+      );
+    }
+    if (data.containsKey('mb_release_group_id')) {
+      context.handle(
+        _mbReleaseGroupIdMeta,
+        mbReleaseGroupId.isAcceptableOrUnknown(
+          data['mb_release_group_id']!,
+          _mbReleaseGroupIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lookup_status')) {
+      context.handle(
+        _lookupStatusMeta,
+        lookupStatus.isAcceptableOrUnknown(
+          data['lookup_status']!,
+          _lookupStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lookup_attempts')) {
+      context.handle(
+        _lookupAttemptsMeta,
+        lookupAttempts.isAcceptableOrUnknown(
+          data['lookup_attempts']!,
+          _lookupAttemptsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('next_attempt_at')) {
+      context.handle(
+        _nextAttemptAtMeta,
+        nextAttemptAt.isAcceptableOrUnknown(
+          data['next_attempt_at']!,
+          _nextAttemptAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lookup_candidates')) {
+      context.handle(
+        _lookupCandidatesMeta,
+        lookupCandidates.isAcceptableOrUnknown(
+          data['lookup_candidates']!,
+          _lookupCandidatesMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -351,6 +607,58 @@ class $SongsTable extends Songs with TableInfo<$SongsTable, Song> {
         DriftSqlType.int,
         data['${effectivePrefix}last_page'],
       )!,
+      artist: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}artist'],
+      )!,
+      year: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}year'],
+      ),
+      genre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}genre'],
+      )!,
+      album: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}album'],
+      )!,
+      coverFileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cover_file_name'],
+      ),
+      importTitle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}import_title'],
+      ),
+      mbRecordingId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mb_recording_id'],
+      ),
+      mbWorkId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mb_work_id'],
+      ),
+      mbReleaseGroupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mb_release_group_id'],
+      ),
+      lookupStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lookup_status'],
+      )!,
+      lookupAttempts: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lookup_attempts'],
+      )!,
+      nextAttemptAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}next_attempt_at'],
+      ),
+      lookupCandidates: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lookup_candidates'],
+      ),
     );
   }
 
@@ -377,6 +685,28 @@ class Song extends DataClass implements Insertable<Song> {
   final DateTime? lastOpenedAt;
   final int openCount;
   final int lastPage;
+  final String artist;
+  final int? year;
+  final String genre;
+  final String album;
+
+  /// Cover image file name relative to the library directory. Not part of backups.
+  final String? coverFileName;
+
+  /// The title as generated at import. Null for songs imported before lookups existed;
+  /// those are never renamed by a lookup.
+  final String? importTitle;
+  final String? mbRecordingId;
+  final String? mbWorkId;
+  final String? mbReleaseGroupId;
+
+  /// One of [LookupStatus.name].
+  final String lookupStatus;
+  final int lookupAttempts;
+  final DateTime? nextAttemptAt;
+
+  /// JSON list of candidates while the status is needsReview.
+  final String? lookupCandidates;
   const Song({
     required this.id,
     required this.title,
@@ -392,6 +722,19 @@ class Song extends DataClass implements Insertable<Song> {
     this.lastOpenedAt,
     required this.openCount,
     required this.lastPage,
+    required this.artist,
+    this.year,
+    required this.genre,
+    required this.album,
+    this.coverFileName,
+    this.importTitle,
+    this.mbRecordingId,
+    this.mbWorkId,
+    this.mbReleaseGroupId,
+    required this.lookupStatus,
+    required this.lookupAttempts,
+    this.nextAttemptAt,
+    this.lookupCandidates,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -414,6 +757,35 @@ class Song extends DataClass implements Insertable<Song> {
     }
     map['open_count'] = Variable<int>(openCount);
     map['last_page'] = Variable<int>(lastPage);
+    map['artist'] = Variable<String>(artist);
+    if (!nullToAbsent || year != null) {
+      map['year'] = Variable<int>(year);
+    }
+    map['genre'] = Variable<String>(genre);
+    map['album'] = Variable<String>(album);
+    if (!nullToAbsent || coverFileName != null) {
+      map['cover_file_name'] = Variable<String>(coverFileName);
+    }
+    if (!nullToAbsent || importTitle != null) {
+      map['import_title'] = Variable<String>(importTitle);
+    }
+    if (!nullToAbsent || mbRecordingId != null) {
+      map['mb_recording_id'] = Variable<String>(mbRecordingId);
+    }
+    if (!nullToAbsent || mbWorkId != null) {
+      map['mb_work_id'] = Variable<String>(mbWorkId);
+    }
+    if (!nullToAbsent || mbReleaseGroupId != null) {
+      map['mb_release_group_id'] = Variable<String>(mbReleaseGroupId);
+    }
+    map['lookup_status'] = Variable<String>(lookupStatus);
+    map['lookup_attempts'] = Variable<int>(lookupAttempts);
+    if (!nullToAbsent || nextAttemptAt != null) {
+      map['next_attempt_at'] = Variable<DateTime>(nextAttemptAt);
+    }
+    if (!nullToAbsent || lookupCandidates != null) {
+      map['lookup_candidates'] = Variable<String>(lookupCandidates);
+    }
     return map;
   }
 
@@ -437,6 +809,33 @@ class Song extends DataClass implements Insertable<Song> {
           : Value(lastOpenedAt),
       openCount: Value(openCount),
       lastPage: Value(lastPage),
+      artist: Value(artist),
+      year: year == null && nullToAbsent ? const Value.absent() : Value(year),
+      genre: Value(genre),
+      album: Value(album),
+      coverFileName: coverFileName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(coverFileName),
+      importTitle: importTitle == null && nullToAbsent
+          ? const Value.absent()
+          : Value(importTitle),
+      mbRecordingId: mbRecordingId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mbRecordingId),
+      mbWorkId: mbWorkId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mbWorkId),
+      mbReleaseGroupId: mbReleaseGroupId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mbReleaseGroupId),
+      lookupStatus: Value(lookupStatus),
+      lookupAttempts: Value(lookupAttempts),
+      nextAttemptAt: nextAttemptAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextAttemptAt),
+      lookupCandidates: lookupCandidates == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lookupCandidates),
     );
   }
 
@@ -460,6 +859,19 @@ class Song extends DataClass implements Insertable<Song> {
       lastOpenedAt: serializer.fromJson<DateTime?>(json['lastOpenedAt']),
       openCount: serializer.fromJson<int>(json['openCount']),
       lastPage: serializer.fromJson<int>(json['lastPage']),
+      artist: serializer.fromJson<String>(json['artist']),
+      year: serializer.fromJson<int?>(json['year']),
+      genre: serializer.fromJson<String>(json['genre']),
+      album: serializer.fromJson<String>(json['album']),
+      coverFileName: serializer.fromJson<String?>(json['coverFileName']),
+      importTitle: serializer.fromJson<String?>(json['importTitle']),
+      mbRecordingId: serializer.fromJson<String?>(json['mbRecordingId']),
+      mbWorkId: serializer.fromJson<String?>(json['mbWorkId']),
+      mbReleaseGroupId: serializer.fromJson<String?>(json['mbReleaseGroupId']),
+      lookupStatus: serializer.fromJson<String>(json['lookupStatus']),
+      lookupAttempts: serializer.fromJson<int>(json['lookupAttempts']),
+      nextAttemptAt: serializer.fromJson<DateTime?>(json['nextAttemptAt']),
+      lookupCandidates: serializer.fromJson<String?>(json['lookupCandidates']),
     );
   }
   @override
@@ -480,6 +892,19 @@ class Song extends DataClass implements Insertable<Song> {
       'lastOpenedAt': serializer.toJson<DateTime?>(lastOpenedAt),
       'openCount': serializer.toJson<int>(openCount),
       'lastPage': serializer.toJson<int>(lastPage),
+      'artist': serializer.toJson<String>(artist),
+      'year': serializer.toJson<int?>(year),
+      'genre': serializer.toJson<String>(genre),
+      'album': serializer.toJson<String>(album),
+      'coverFileName': serializer.toJson<String?>(coverFileName),
+      'importTitle': serializer.toJson<String?>(importTitle),
+      'mbRecordingId': serializer.toJson<String?>(mbRecordingId),
+      'mbWorkId': serializer.toJson<String?>(mbWorkId),
+      'mbReleaseGroupId': serializer.toJson<String?>(mbReleaseGroupId),
+      'lookupStatus': serializer.toJson<String>(lookupStatus),
+      'lookupAttempts': serializer.toJson<int>(lookupAttempts),
+      'nextAttemptAt': serializer.toJson<DateTime?>(nextAttemptAt),
+      'lookupCandidates': serializer.toJson<String?>(lookupCandidates),
     };
   }
 
@@ -498,6 +923,19 @@ class Song extends DataClass implements Insertable<Song> {
     Value<DateTime?> lastOpenedAt = const Value.absent(),
     int? openCount,
     int? lastPage,
+    String? artist,
+    Value<int?> year = const Value.absent(),
+    String? genre,
+    String? album,
+    Value<String?> coverFileName = const Value.absent(),
+    Value<String?> importTitle = const Value.absent(),
+    Value<String?> mbRecordingId = const Value.absent(),
+    Value<String?> mbWorkId = const Value.absent(),
+    Value<String?> mbReleaseGroupId = const Value.absent(),
+    String? lookupStatus,
+    int? lookupAttempts,
+    Value<DateTime?> nextAttemptAt = const Value.absent(),
+    Value<String?> lookupCandidates = const Value.absent(),
   }) => Song(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -513,6 +951,29 @@ class Song extends DataClass implements Insertable<Song> {
     lastOpenedAt: lastOpenedAt.present ? lastOpenedAt.value : this.lastOpenedAt,
     openCount: openCount ?? this.openCount,
     lastPage: lastPage ?? this.lastPage,
+    artist: artist ?? this.artist,
+    year: year.present ? year.value : this.year,
+    genre: genre ?? this.genre,
+    album: album ?? this.album,
+    coverFileName: coverFileName.present
+        ? coverFileName.value
+        : this.coverFileName,
+    importTitle: importTitle.present ? importTitle.value : this.importTitle,
+    mbRecordingId: mbRecordingId.present
+        ? mbRecordingId.value
+        : this.mbRecordingId,
+    mbWorkId: mbWorkId.present ? mbWorkId.value : this.mbWorkId,
+    mbReleaseGroupId: mbReleaseGroupId.present
+        ? mbReleaseGroupId.value
+        : this.mbReleaseGroupId,
+    lookupStatus: lookupStatus ?? this.lookupStatus,
+    lookupAttempts: lookupAttempts ?? this.lookupAttempts,
+    nextAttemptAt: nextAttemptAt.present
+        ? nextAttemptAt.value
+        : this.nextAttemptAt,
+    lookupCandidates: lookupCandidates.present
+        ? lookupCandidates.value
+        : this.lookupCandidates,
   );
   Song copyWithCompanion(SongsCompanion data) {
     return Song(
@@ -536,6 +997,35 @@ class Song extends DataClass implements Insertable<Song> {
           : this.lastOpenedAt,
       openCount: data.openCount.present ? data.openCount.value : this.openCount,
       lastPage: data.lastPage.present ? data.lastPage.value : this.lastPage,
+      artist: data.artist.present ? data.artist.value : this.artist,
+      year: data.year.present ? data.year.value : this.year,
+      genre: data.genre.present ? data.genre.value : this.genre,
+      album: data.album.present ? data.album.value : this.album,
+      coverFileName: data.coverFileName.present
+          ? data.coverFileName.value
+          : this.coverFileName,
+      importTitle: data.importTitle.present
+          ? data.importTitle.value
+          : this.importTitle,
+      mbRecordingId: data.mbRecordingId.present
+          ? data.mbRecordingId.value
+          : this.mbRecordingId,
+      mbWorkId: data.mbWorkId.present ? data.mbWorkId.value : this.mbWorkId,
+      mbReleaseGroupId: data.mbReleaseGroupId.present
+          ? data.mbReleaseGroupId.value
+          : this.mbReleaseGroupId,
+      lookupStatus: data.lookupStatus.present
+          ? data.lookupStatus.value
+          : this.lookupStatus,
+      lookupAttempts: data.lookupAttempts.present
+          ? data.lookupAttempts.value
+          : this.lookupAttempts,
+      nextAttemptAt: data.nextAttemptAt.present
+          ? data.nextAttemptAt.value
+          : this.nextAttemptAt,
+      lookupCandidates: data.lookupCandidates.present
+          ? data.lookupCandidates.value
+          : this.lookupCandidates,
     );
   }
 
@@ -555,13 +1045,26 @@ class Song extends DataClass implements Insertable<Song> {
           ..write('createdAt: $createdAt, ')
           ..write('lastOpenedAt: $lastOpenedAt, ')
           ..write('openCount: $openCount, ')
-          ..write('lastPage: $lastPage')
+          ..write('lastPage: $lastPage, ')
+          ..write('artist: $artist, ')
+          ..write('year: $year, ')
+          ..write('genre: $genre, ')
+          ..write('album: $album, ')
+          ..write('coverFileName: $coverFileName, ')
+          ..write('importTitle: $importTitle, ')
+          ..write('mbRecordingId: $mbRecordingId, ')
+          ..write('mbWorkId: $mbWorkId, ')
+          ..write('mbReleaseGroupId: $mbReleaseGroupId, ')
+          ..write('lookupStatus: $lookupStatus, ')
+          ..write('lookupAttempts: $lookupAttempts, ')
+          ..write('nextAttemptAt: $nextAttemptAt, ')
+          ..write('lookupCandidates: $lookupCandidates')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     title,
     composer,
@@ -576,7 +1079,20 @@ class Song extends DataClass implements Insertable<Song> {
     lastOpenedAt,
     openCount,
     lastPage,
-  );
+    artist,
+    year,
+    genre,
+    album,
+    coverFileName,
+    importTitle,
+    mbRecordingId,
+    mbWorkId,
+    mbReleaseGroupId,
+    lookupStatus,
+    lookupAttempts,
+    nextAttemptAt,
+    lookupCandidates,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -594,7 +1110,20 @@ class Song extends DataClass implements Insertable<Song> {
           other.createdAt == this.createdAt &&
           other.lastOpenedAt == this.lastOpenedAt &&
           other.openCount == this.openCount &&
-          other.lastPage == this.lastPage);
+          other.lastPage == this.lastPage &&
+          other.artist == this.artist &&
+          other.year == this.year &&
+          other.genre == this.genre &&
+          other.album == this.album &&
+          other.coverFileName == this.coverFileName &&
+          other.importTitle == this.importTitle &&
+          other.mbRecordingId == this.mbRecordingId &&
+          other.mbWorkId == this.mbWorkId &&
+          other.mbReleaseGroupId == this.mbReleaseGroupId &&
+          other.lookupStatus == this.lookupStatus &&
+          other.lookupAttempts == this.lookupAttempts &&
+          other.nextAttemptAt == this.nextAttemptAt &&
+          other.lookupCandidates == this.lookupCandidates);
 }
 
 class SongsCompanion extends UpdateCompanion<Song> {
@@ -612,6 +1141,19 @@ class SongsCompanion extends UpdateCompanion<Song> {
   final Value<DateTime?> lastOpenedAt;
   final Value<int> openCount;
   final Value<int> lastPage;
+  final Value<String> artist;
+  final Value<int?> year;
+  final Value<String> genre;
+  final Value<String> album;
+  final Value<String?> coverFileName;
+  final Value<String?> importTitle;
+  final Value<String?> mbRecordingId;
+  final Value<String?> mbWorkId;
+  final Value<String?> mbReleaseGroupId;
+  final Value<String> lookupStatus;
+  final Value<int> lookupAttempts;
+  final Value<DateTime?> nextAttemptAt;
+  final Value<String?> lookupCandidates;
   const SongsCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
@@ -627,6 +1169,19 @@ class SongsCompanion extends UpdateCompanion<Song> {
     this.lastOpenedAt = const Value.absent(),
     this.openCount = const Value.absent(),
     this.lastPage = const Value.absent(),
+    this.artist = const Value.absent(),
+    this.year = const Value.absent(),
+    this.genre = const Value.absent(),
+    this.album = const Value.absent(),
+    this.coverFileName = const Value.absent(),
+    this.importTitle = const Value.absent(),
+    this.mbRecordingId = const Value.absent(),
+    this.mbWorkId = const Value.absent(),
+    this.mbReleaseGroupId = const Value.absent(),
+    this.lookupStatus = const Value.absent(),
+    this.lookupAttempts = const Value.absent(),
+    this.nextAttemptAt = const Value.absent(),
+    this.lookupCandidates = const Value.absent(),
   });
   SongsCompanion.insert({
     this.id = const Value.absent(),
@@ -643,6 +1198,19 @@ class SongsCompanion extends UpdateCompanion<Song> {
     this.lastOpenedAt = const Value.absent(),
     this.openCount = const Value.absent(),
     this.lastPage = const Value.absent(),
+    this.artist = const Value.absent(),
+    this.year = const Value.absent(),
+    this.genre = const Value.absent(),
+    this.album = const Value.absent(),
+    this.coverFileName = const Value.absent(),
+    this.importTitle = const Value.absent(),
+    this.mbRecordingId = const Value.absent(),
+    this.mbWorkId = const Value.absent(),
+    this.mbReleaseGroupId = const Value.absent(),
+    this.lookupStatus = const Value.absent(),
+    this.lookupAttempts = const Value.absent(),
+    this.nextAttemptAt = const Value.absent(),
+    this.lookupCandidates = const Value.absent(),
   }) : title = Value(title),
        fileName = Value(fileName),
        fileHash = Value(fileHash),
@@ -662,6 +1230,19 @@ class SongsCompanion extends UpdateCompanion<Song> {
     Expression<DateTime>? lastOpenedAt,
     Expression<int>? openCount,
     Expression<int>? lastPage,
+    Expression<String>? artist,
+    Expression<int>? year,
+    Expression<String>? genre,
+    Expression<String>? album,
+    Expression<String>? coverFileName,
+    Expression<String>? importTitle,
+    Expression<String>? mbRecordingId,
+    Expression<String>? mbWorkId,
+    Expression<String>? mbReleaseGroupId,
+    Expression<String>? lookupStatus,
+    Expression<int>? lookupAttempts,
+    Expression<DateTime>? nextAttemptAt,
+    Expression<String>? lookupCandidates,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -678,6 +1259,19 @@ class SongsCompanion extends UpdateCompanion<Song> {
       if (lastOpenedAt != null) 'last_opened_at': lastOpenedAt,
       if (openCount != null) 'open_count': openCount,
       if (lastPage != null) 'last_page': lastPage,
+      if (artist != null) 'artist': artist,
+      if (year != null) 'year': year,
+      if (genre != null) 'genre': genre,
+      if (album != null) 'album': album,
+      if (coverFileName != null) 'cover_file_name': coverFileName,
+      if (importTitle != null) 'import_title': importTitle,
+      if (mbRecordingId != null) 'mb_recording_id': mbRecordingId,
+      if (mbWorkId != null) 'mb_work_id': mbWorkId,
+      if (mbReleaseGroupId != null) 'mb_release_group_id': mbReleaseGroupId,
+      if (lookupStatus != null) 'lookup_status': lookupStatus,
+      if (lookupAttempts != null) 'lookup_attempts': lookupAttempts,
+      if (nextAttemptAt != null) 'next_attempt_at': nextAttemptAt,
+      if (lookupCandidates != null) 'lookup_candidates': lookupCandidates,
     });
   }
 
@@ -696,6 +1290,19 @@ class SongsCompanion extends UpdateCompanion<Song> {
     Value<DateTime?>? lastOpenedAt,
     Value<int>? openCount,
     Value<int>? lastPage,
+    Value<String>? artist,
+    Value<int?>? year,
+    Value<String>? genre,
+    Value<String>? album,
+    Value<String?>? coverFileName,
+    Value<String?>? importTitle,
+    Value<String?>? mbRecordingId,
+    Value<String?>? mbWorkId,
+    Value<String?>? mbReleaseGroupId,
+    Value<String>? lookupStatus,
+    Value<int>? lookupAttempts,
+    Value<DateTime?>? nextAttemptAt,
+    Value<String?>? lookupCandidates,
   }) {
     return SongsCompanion(
       id: id ?? this.id,
@@ -712,6 +1319,19 @@ class SongsCompanion extends UpdateCompanion<Song> {
       lastOpenedAt: lastOpenedAt ?? this.lastOpenedAt,
       openCount: openCount ?? this.openCount,
       lastPage: lastPage ?? this.lastPage,
+      artist: artist ?? this.artist,
+      year: year ?? this.year,
+      genre: genre ?? this.genre,
+      album: album ?? this.album,
+      coverFileName: coverFileName ?? this.coverFileName,
+      importTitle: importTitle ?? this.importTitle,
+      mbRecordingId: mbRecordingId ?? this.mbRecordingId,
+      mbWorkId: mbWorkId ?? this.mbWorkId,
+      mbReleaseGroupId: mbReleaseGroupId ?? this.mbReleaseGroupId,
+      lookupStatus: lookupStatus ?? this.lookupStatus,
+      lookupAttempts: lookupAttempts ?? this.lookupAttempts,
+      nextAttemptAt: nextAttemptAt ?? this.nextAttemptAt,
+      lookupCandidates: lookupCandidates ?? this.lookupCandidates,
     );
   }
 
@@ -760,6 +1380,45 @@ class SongsCompanion extends UpdateCompanion<Song> {
     if (lastPage.present) {
       map['last_page'] = Variable<int>(lastPage.value);
     }
+    if (artist.present) {
+      map['artist'] = Variable<String>(artist.value);
+    }
+    if (year.present) {
+      map['year'] = Variable<int>(year.value);
+    }
+    if (genre.present) {
+      map['genre'] = Variable<String>(genre.value);
+    }
+    if (album.present) {
+      map['album'] = Variable<String>(album.value);
+    }
+    if (coverFileName.present) {
+      map['cover_file_name'] = Variable<String>(coverFileName.value);
+    }
+    if (importTitle.present) {
+      map['import_title'] = Variable<String>(importTitle.value);
+    }
+    if (mbRecordingId.present) {
+      map['mb_recording_id'] = Variable<String>(mbRecordingId.value);
+    }
+    if (mbWorkId.present) {
+      map['mb_work_id'] = Variable<String>(mbWorkId.value);
+    }
+    if (mbReleaseGroupId.present) {
+      map['mb_release_group_id'] = Variable<String>(mbReleaseGroupId.value);
+    }
+    if (lookupStatus.present) {
+      map['lookup_status'] = Variable<String>(lookupStatus.value);
+    }
+    if (lookupAttempts.present) {
+      map['lookup_attempts'] = Variable<int>(lookupAttempts.value);
+    }
+    if (nextAttemptAt.present) {
+      map['next_attempt_at'] = Variable<DateTime>(nextAttemptAt.value);
+    }
+    if (lookupCandidates.present) {
+      map['lookup_candidates'] = Variable<String>(lookupCandidates.value);
+    }
     return map;
   }
 
@@ -779,7 +1438,20 @@ class SongsCompanion extends UpdateCompanion<Song> {
           ..write('createdAt: $createdAt, ')
           ..write('lastOpenedAt: $lastOpenedAt, ')
           ..write('openCount: $openCount, ')
-          ..write('lastPage: $lastPage')
+          ..write('lastPage: $lastPage, ')
+          ..write('artist: $artist, ')
+          ..write('year: $year, ')
+          ..write('genre: $genre, ')
+          ..write('album: $album, ')
+          ..write('coverFileName: $coverFileName, ')
+          ..write('importTitle: $importTitle, ')
+          ..write('mbRecordingId: $mbRecordingId, ')
+          ..write('mbWorkId: $mbWorkId, ')
+          ..write('mbReleaseGroupId: $mbReleaseGroupId, ')
+          ..write('lookupStatus: $lookupStatus, ')
+          ..write('lookupAttempts: $lookupAttempts, ')
+          ..write('nextAttemptAt: $nextAttemptAt, ')
+          ..write('lookupCandidates: $lookupCandidates')
           ..write(')'))
         .toString();
   }
@@ -3391,6 +4063,19 @@ typedef $$SongsTableCreateCompanionBuilder =
       Value<DateTime?> lastOpenedAt,
       Value<int> openCount,
       Value<int> lastPage,
+      Value<String> artist,
+      Value<int?> year,
+      Value<String> genre,
+      Value<String> album,
+      Value<String?> coverFileName,
+      Value<String?> importTitle,
+      Value<String?> mbRecordingId,
+      Value<String?> mbWorkId,
+      Value<String?> mbReleaseGroupId,
+      Value<String> lookupStatus,
+      Value<int> lookupAttempts,
+      Value<DateTime?> nextAttemptAt,
+      Value<String?> lookupCandidates,
     });
 typedef $$SongsTableUpdateCompanionBuilder =
     SongsCompanion Function({
@@ -3408,6 +4093,19 @@ typedef $$SongsTableUpdateCompanionBuilder =
       Value<DateTime?> lastOpenedAt,
       Value<int> openCount,
       Value<int> lastPage,
+      Value<String> artist,
+      Value<int?> year,
+      Value<String> genre,
+      Value<String> album,
+      Value<String?> coverFileName,
+      Value<String?> importTitle,
+      Value<String?> mbRecordingId,
+      Value<String?> mbWorkId,
+      Value<String?> mbReleaseGroupId,
+      Value<String> lookupStatus,
+      Value<int> lookupAttempts,
+      Value<DateTime?> nextAttemptAt,
+      Value<String?> lookupCandidates,
     });
 
 final class $$SongsTableReferences
@@ -3581,6 +4279,71 @@ class $$SongsTableFilterComposer extends Composer<_$AppDatabase, $SongsTable> {
 
   ColumnFilters<int> get lastPage => $composableBuilder(
     column: $table.lastPage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get artist => $composableBuilder(
+    column: $table.artist,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get year => $composableBuilder(
+    column: $table.year,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get genre => $composableBuilder(
+    column: $table.genre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get album => $composableBuilder(
+    column: $table.album,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get coverFileName => $composableBuilder(
+    column: $table.coverFileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get importTitle => $composableBuilder(
+    column: $table.importTitle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mbRecordingId => $composableBuilder(
+    column: $table.mbRecordingId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mbWorkId => $composableBuilder(
+    column: $table.mbWorkId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mbReleaseGroupId => $composableBuilder(
+    column: $table.mbReleaseGroupId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lookupStatus => $composableBuilder(
+    column: $table.lookupStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lookupAttempts => $composableBuilder(
+    column: $table.lookupAttempts,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get nextAttemptAt => $composableBuilder(
+    column: $table.nextAttemptAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lookupCandidates => $composableBuilder(
+    column: $table.lookupCandidates,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3788,6 +4551,71 @@ class $$SongsTableOrderingComposer
     column: $table.lastPage,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get artist => $composableBuilder(
+    column: $table.artist,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get year => $composableBuilder(
+    column: $table.year,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get genre => $composableBuilder(
+    column: $table.genre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get album => $composableBuilder(
+    column: $table.album,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get coverFileName => $composableBuilder(
+    column: $table.coverFileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get importTitle => $composableBuilder(
+    column: $table.importTitle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mbRecordingId => $composableBuilder(
+    column: $table.mbRecordingId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mbWorkId => $composableBuilder(
+    column: $table.mbWorkId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mbReleaseGroupId => $composableBuilder(
+    column: $table.mbReleaseGroupId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lookupStatus => $composableBuilder(
+    column: $table.lookupStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lookupAttempts => $composableBuilder(
+    column: $table.lookupAttempts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get nextAttemptAt => $composableBuilder(
+    column: $table.nextAttemptAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lookupCandidates => $composableBuilder(
+    column: $table.lookupCandidates,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SongsTableAnnotationComposer
@@ -3846,6 +4674,61 @@ class $$SongsTableAnnotationComposer
 
   GeneratedColumn<int> get lastPage =>
       $composableBuilder(column: $table.lastPage, builder: (column) => column);
+
+  GeneratedColumn<String> get artist =>
+      $composableBuilder(column: $table.artist, builder: (column) => column);
+
+  GeneratedColumn<int> get year =>
+      $composableBuilder(column: $table.year, builder: (column) => column);
+
+  GeneratedColumn<String> get genre =>
+      $composableBuilder(column: $table.genre, builder: (column) => column);
+
+  GeneratedColumn<String> get album =>
+      $composableBuilder(column: $table.album, builder: (column) => column);
+
+  GeneratedColumn<String> get coverFileName => $composableBuilder(
+    column: $table.coverFileName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get importTitle => $composableBuilder(
+    column: $table.importTitle,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get mbRecordingId => $composableBuilder(
+    column: $table.mbRecordingId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get mbWorkId =>
+      $composableBuilder(column: $table.mbWorkId, builder: (column) => column);
+
+  GeneratedColumn<String> get mbReleaseGroupId => $composableBuilder(
+    column: $table.mbReleaseGroupId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lookupStatus => $composableBuilder(
+    column: $table.lookupStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lookupAttempts => $composableBuilder(
+    column: $table.lookupAttempts,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get nextAttemptAt => $composableBuilder(
+    column: $table.nextAttemptAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lookupCandidates => $composableBuilder(
+    column: $table.lookupCandidates,
+    builder: (column) => column,
+  );
 
   Expression<T> folderSongsRefs<T extends Object>(
     Expression<T> Function($$FolderSongsTableAnnotationComposer a) f,
@@ -4021,6 +4904,19 @@ class $$SongsTableTableManager
                 Value<DateTime?> lastOpenedAt = const Value.absent(),
                 Value<int> openCount = const Value.absent(),
                 Value<int> lastPage = const Value.absent(),
+                Value<String> artist = const Value.absent(),
+                Value<int?> year = const Value.absent(),
+                Value<String> genre = const Value.absent(),
+                Value<String> album = const Value.absent(),
+                Value<String?> coverFileName = const Value.absent(),
+                Value<String?> importTitle = const Value.absent(),
+                Value<String?> mbRecordingId = const Value.absent(),
+                Value<String?> mbWorkId = const Value.absent(),
+                Value<String?> mbReleaseGroupId = const Value.absent(),
+                Value<String> lookupStatus = const Value.absent(),
+                Value<int> lookupAttempts = const Value.absent(),
+                Value<DateTime?> nextAttemptAt = const Value.absent(),
+                Value<String?> lookupCandidates = const Value.absent(),
               }) => SongsCompanion(
                 id: id,
                 title: title,
@@ -4036,6 +4932,19 @@ class $$SongsTableTableManager
                 lastOpenedAt: lastOpenedAt,
                 openCount: openCount,
                 lastPage: lastPage,
+                artist: artist,
+                year: year,
+                genre: genre,
+                album: album,
+                coverFileName: coverFileName,
+                importTitle: importTitle,
+                mbRecordingId: mbRecordingId,
+                mbWorkId: mbWorkId,
+                mbReleaseGroupId: mbReleaseGroupId,
+                lookupStatus: lookupStatus,
+                lookupAttempts: lookupAttempts,
+                nextAttemptAt: nextAttemptAt,
+                lookupCandidates: lookupCandidates,
               ),
           createCompanionCallback:
               ({
@@ -4053,6 +4962,19 @@ class $$SongsTableTableManager
                 Value<DateTime?> lastOpenedAt = const Value.absent(),
                 Value<int> openCount = const Value.absent(),
                 Value<int> lastPage = const Value.absent(),
+                Value<String> artist = const Value.absent(),
+                Value<int?> year = const Value.absent(),
+                Value<String> genre = const Value.absent(),
+                Value<String> album = const Value.absent(),
+                Value<String?> coverFileName = const Value.absent(),
+                Value<String?> importTitle = const Value.absent(),
+                Value<String?> mbRecordingId = const Value.absent(),
+                Value<String?> mbWorkId = const Value.absent(),
+                Value<String?> mbReleaseGroupId = const Value.absent(),
+                Value<String> lookupStatus = const Value.absent(),
+                Value<int> lookupAttempts = const Value.absent(),
+                Value<DateTime?> nextAttemptAt = const Value.absent(),
+                Value<String?> lookupCandidates = const Value.absent(),
               }) => SongsCompanion.insert(
                 id: id,
                 title: title,
@@ -4068,6 +4990,19 @@ class $$SongsTableTableManager
                 lastOpenedAt: lastOpenedAt,
                 openCount: openCount,
                 lastPage: lastPage,
+                artist: artist,
+                year: year,
+                genre: genre,
+                album: album,
+                coverFileName: coverFileName,
+                importTitle: importTitle,
+                mbRecordingId: mbRecordingId,
+                mbWorkId: mbWorkId,
+                mbReleaseGroupId: mbReleaseGroupId,
+                lookupStatus: lookupStatus,
+                lookupAttempts: lookupAttempts,
+                nextAttemptAt: nextAttemptAt,
+                lookupCandidates: lookupCandidates,
               ),
           withReferenceMapper: (p0) => p0
               .map(

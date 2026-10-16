@@ -15,4 +15,9 @@ Song song(int id, String title, {String composer = '', int pages = 1, DateTime? 
       lastOpenedAt: opened,
       openCount: opens,
       lastPage: 0,
+      artist: '',
+      genre: '',
+      album: '',
+      lookupStatus: 'pending',
+      lookupAttempts: 0,
     );

@@ -69,8 +69,10 @@ class ImportService {
           result.failed.add(src.name);
           continue;
         }
+        final title = titleFromFileName(src.name);
         final id = await db.insertSong(SongsCompanion.insert(
-          title: titleFromFileName(src.name),
+          title: title,
+          importTitle: Value(title),
           fileName: fileName,
           fileHash: hash,
           pageCount: Value(pageCount),
@@ -89,7 +91,11 @@ class ImportService {
     final ids = [for (final s in songs) s.id];
     final clips = await db.audioClipsForSongs(ids);
     await db.deleteSongs(ids); // clip rows go with them (cascade)
-    for (final name in [for (final s in songs) s.fileName, for (final c in clips) c.fileName]) {
+    for (final name in [
+      for (final s in songs) s.fileName,
+      for (final s in songs) ?s.coverFileName,
+      for (final c in clips) c.fileName,
+    ]) {
       final f = File(paths.pdf(name));
       if (f.existsSync()) await f.delete();
     }

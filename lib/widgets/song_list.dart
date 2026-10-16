@@ -4,6 +4,7 @@ import 'package:super_sliver_list/super_sliver_list.dart';
 
 import '../core/sorting.dart';
 import '../data/db.dart';
+import 'metadata_widgets.dart';
 
 const _headerColor = Color(0xFF575757);
 const _railWidth = 44.0;
@@ -180,6 +181,8 @@ class _SongRow extends StatelessWidget {
                     )
                   : const SizedBox.shrink(),
             ),
+            if (song.coverFileName != null)
+              Padding(padding: const EdgeInsets.only(right: 12), child: CoverImage(song: song, size: 52)),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(song.title,
@@ -200,6 +203,7 @@ class _SongRow extends StatelessWidget {
                       style: t.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                     ),
                   ),
+                  ReviewBadge(song: song),
                   for (final tag in tags.take(4)) ...[const SizedBox(width: 8), TagPill(tag)],
                 ]),
               ]),

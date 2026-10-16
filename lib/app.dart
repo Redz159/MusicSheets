@@ -11,6 +11,7 @@ import 'features/setlists/setlist_screen.dart';
 import 'features/setlists/setlists_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/viewer/viewer_screen.dart';
+import 'services/services.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -116,7 +117,7 @@ class MusicSheetsApp extends ConsumerWidget {
 }
 
 /// Tablet: navigation rail. Phone: bottom navigation bar.
-class HomeShell extends StatelessWidget {
+class HomeShell extends ConsumerWidget {
   const HomeShell({super.key, required this.shell});
 
   final StatefulNavigationShell shell;
@@ -131,7 +132,8 @@ class HomeShell extends StatelessWidget {
   void _go(int i) => shell.goBranch(i, initialLocation: i == shell.currentIndex);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(lookupControllerProvider); // keeps the metadata queue running
     final wide = MediaQuery.sizeOf(context).width >= 720;
     if (wide) {
       return Scaffold(

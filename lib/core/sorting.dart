@@ -131,10 +131,10 @@ class IndexedSongs {
   }
 }
 
-/// Simple multi-term search over title, composer, instrument, key, notes and tags.
+/// Simple multi-term search over title, composer, artist, album, genre, instrument, key, notes and tags.
 bool matchesQuery(Song s, String query, List<String> tagNames) {
   final q = foldText(query);
   if (q.isEmpty) return true;
-  final hay = foldText([s.title, s.composer, s.instrument, s.musicalKey, s.notes, ...tagNames].join(' '));
+  final hay = foldText([s.title, s.composer, s.artist, s.album, s.genre, s.instrument, s.musicalKey, s.notes, ...tagNames].join(' '));
   return q.split(RegExp(r'\s+')).every(hay.contains);
 }

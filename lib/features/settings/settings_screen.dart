@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/settings.dart';
+import '../../data/db.dart';
 import '../../data/providers.dart';
 import '../../services/backup_service.dart';
 import '../../services/services.dart';
 import '../../widgets/dialogs.dart';
+import '../../widgets/metadata_widgets.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -118,6 +122,26 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                 ]),
               ),
+            const _Header('Song metadata'),
+            SwitchListTile(
+              title: const Text('Fetch song metadata online'),
+              subtitle: const Text(
+                  'Looks up composer, key, tempo, artist, year, genre, album and cover art. Song titles are sent to '
+                  'MusicBrainz, AcousticBrainz and Deezer, also for your existing library.'),
+              value: s.fetchMetadata,
+              onChanged: (v) => v ? enableMetadataLookup(context, ref) : n.set((x) => x.copyWith(fetchMetadata: false)),
+            ),
+            SwitchListTile(
+              title: const Text('Wi-Fi only'),
+              subtitle: const Text('Wait for Wi-Fi so mobile data is not used'),
+              value: s.metadataWifiOnly,
+              onChanged: s.fetchMetadata ? (v) => n.set((x) => x.copyWith(metadataWifiOnly: v)) : null,
+            ),
+            if (s.fetchMetadata) _MetadataProgress(songs: songs),
+            const ListTile(
+              dense: true,
+              title: Text('Data from MusicBrainz and the Cover Art Archive. Key and tempo from AcousticBrainz and Deezer.'),
+            ),
             const _Header('Backup'),
             ListTile(
               leading: const Icon(Icons.backup_outlined),
@@ -173,11 +197,33 @@ class SettingsScreen extends ConsumerWidget {
         await backup.install(dir);
         ref.read(libraryEpochProvider.notifier).bump();
       });
+      // Covers are not in backups: download them again for songs that were already matched.
+      if (ref.read(settingsProvider).fetchMetadata) unawaited(ref.read(lookupServiceProvider).restoreMissingCovers());
       if (context.mounted) showSnack(context, 'Backup restored');
     } catch (e) {
       ref.read(libraryEpochProvider.notifier).bump();
       if (context.mounted) showSnack(context, 'Restore failed: $e');
     }
+  }
+}
+
+class _MetadataProgress extends StatelessWidget {
+  const _MetadataProgress({required this.songs});
+  final List<Song> songs;
+
+  @override
+  Widget build(BuildContext context) {
+    int count(String status) => songs.where((s) => s.lookupStatus == status).length;
+    final pending = count('pending'), review = count('needsReview'), failed = count('failed');
+    if (pending + review + failed == 0) return const SizedBox.shrink();
+    return ListTile(
+      leading: const Icon(Icons.cloud_sync_outlined),
+      title: Text([
+        if (pending > 0) '$pending waiting for lookup',
+        if (review > 0) '$review need review',
+        if (failed > 0) '$failed failed',
+      ].join(' · ')),
+    );
   }
 }
 

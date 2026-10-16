@@ -6,11 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'core/settings.dart';
 import 'data/providers.dart';
+import 'services/metadata/background.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   pdfrxFlutterInitialize();
   final results = await Future.wait([AppPaths.resolve(), SharedPreferences.getInstance()]);
+  await BackgroundScheduler.init();
   runApp(ProviderScope(
     overrides: [
       appPathsProvider.overrideWithValue(results[0] as AppPaths),
