@@ -74,7 +74,6 @@ ThemeData buildTheme(Brightness brightness) {
     visualDensity: VisualDensity.standard,
     pageTransitionsTheme: const PageTransitionsTheme(builders: {
       TargetPlatform.android: SharedAxisPageTransitionsBuilder(transitionType: SharedAxisTransitionType.horizontal),
-      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
     }),
     appBarTheme: AppBarTheme(
       backgroundColor: scheme.surface,
