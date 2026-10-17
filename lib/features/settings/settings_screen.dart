@@ -161,6 +161,13 @@ class SettingsScreen extends ConsumerWidget {
               title: Text('${songs.length} songs · $pages pages'),
               subtitle: Text('Stored on this device', style: t.textTheme.bodySmall),
             ),
+            const _Header('About'),
+            ListTile(
+              leading: const Icon(Icons.description_outlined),
+              title: const Text('Open-source licenses'),
+              subtitle: const Text('MusicSheets is MIT-licensed. PDF export uses Syncfusion under its Community License.'),
+              onTap: () => showLicensePage(context: context, applicationName: 'MusicSheets'),
+            ),
           ]),
         ),
       ),

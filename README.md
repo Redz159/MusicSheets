@@ -4,15 +4,15 @@ A sheet music library for tablets, built with Flutter. Import PDFs, organise the
 
 Runs on Android and on iPadOS 15 and above (iPhone builds too, but iPad is the focus).
 
+### Requirements
+
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
+
 ## Installing on an iPad
 
 The app is not on the App Store. The release IPA is unsigned on purpose, so you either re-sign it yourself (Option A) or build it from source (Option B).
-
-### Requirements
-
-- iPad running **iPadOS 15 or later**
-- A Mac or Windows PC to install from
-- A free Apple ID is enough. Apps signed with a free Apple ID **expire after 7 days** and have to be re-signed; a paid Apple Developer account lasts a year.
 
 ### Step 0: Enable Developer Mode (once per iPad)
 
@@ -84,3 +84,11 @@ flutter run
 ```
 
 Releases are built by [.github/workflows/release.yml](.github/workflows/release.yml) when a `v*` tag is pushed. It produces the signed Android APK and the unsigned iOS IPA. Without the `ANDROID_KEYSTORE_BASE64` secret the APK is signed with the debug key.
+
+## License
+
+MusicSheets is released under the [MIT License](LICENSE). It depends on third-party software with its own
+licenses, including the proprietary Syncfusion Flutter PDF package; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- iPad running **iPadOS 15 or later**
+- A Mac or Windows PC to install from
+- A free Apple ID is enough. Apps signed with a free Apple ID **expire after 7 days** and have to be re-signed; a paid Apple Developer account lasts a year.

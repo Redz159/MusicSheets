@@ -7,6 +7,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/licenses.dart';
 import 'core/settings.dart';
 import 'data/providers.dart';
 import 'services/metadata/background.dart';
@@ -14,6 +15,7 @@ import 'services/metadata/background.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   pdfrxFlutterInitialize();
+  registerNativeLicenses();
   if (Platform.isIOS) {
     final session = await AudioSession.instance;
     await session.configure(
