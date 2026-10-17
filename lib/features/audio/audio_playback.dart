@@ -71,7 +71,7 @@ class AudioPlayback extends ChangeNotifier {
     });
   }
 
-  final _player = AudioPlayer();
+  final _player = AudioPlayer(handleAudioSessionActivation: !Platform.isAndroid);
   late final StreamSubscription<PlayerState> _sub;
 
   AudioClip? _clip;

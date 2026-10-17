@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
@@ -11,6 +14,14 @@ import 'services/metadata/background.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   pdfrxFlutterInitialize();
+  if (Platform.isIOS) {
+    final session = await AudioSession.instance;
+    await session.configure(
+      const AudioSessionConfiguration.music().copyWith(
+        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers,
+      ),
+    );
+  }
   final results = await Future.wait([AppPaths.resolve(), SharedPreferences.getInstance()]);
   await BackgroundScheduler.init();
   runApp(ProviderScope(
