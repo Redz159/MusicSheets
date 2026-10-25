@@ -32,13 +32,14 @@ class SettingsScreen extends ConsumerWidget {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
-          child: ListView(
-            padding: EdgeInsets.only(
-              left: usesCupertinoPresentation ? 8 : 0,
-              right: usesCupertinoPresentation ? 8 : 0,
-              bottom: 32,
-            ),
-            children: [
+          child: SizedBox.expand(
+            child: ListView(
+              padding: EdgeInsets.only(
+                left: usesCupertinoPresentation ? 8 : 0,
+                right: usesCupertinoPresentation ? 8 : 0,
+                bottom: 32,
+              ),
+              children: [
               PlatformSettingsSection(
                 title: 'Appearance',
                 children: [
@@ -149,17 +150,15 @@ class SettingsScreen extends ConsumerWidget {
                                 n.set((x) => x.copyWith(pageTint: v.first)),
                           ),
                   ),
-                  PlatformListTile(
+                  PlatformSliderTile(
                     title: const Text('Page-turn tap zone'),
-                    trailing: PlatformSlider(
-                      value: s.tapZoneFraction,
-                      min: 0.15,
-                      max: 0.45,
-                      divisions: 6,
-                      label: '${(s.tapZoneFraction * 100).round()} %',
-                      onChanged: (v) =>
-                          n.set((x) => x.copyWith(tapZoneFraction: v)),
-                    ),
+                    value: s.tapZoneFraction,
+                    min: 0.15,
+                    max: 0.45,
+                    divisions: 6,
+                    label: '${(s.tapZoneFraction * 100).round()} %',
+                    onChanged: (v) =>
+                        n.set((x) => x.copyWith(tapZoneFraction: v)),
                   ),
                   PlatformSwitchTile(
                     title: const Text('Keep screen on while reading'),
@@ -344,6 +343,7 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

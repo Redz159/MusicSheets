@@ -416,12 +416,14 @@ class PlatformSlider extends StatelessWidget {
     if (usesCupertinoPresentation) {
       return Row(
         children: [
-          CupertinoSlider(
-            value: value,
-            min: min,
-            max: max,
-            divisions: divisions,
-            onChanged: onChanged,
+          Expanded(
+            child: CupertinoSlider(
+              value: value,
+              min: min,
+              max: max,
+              divisions: divisions,
+              onChanged: onChanged,
+            ),
           ),
           if (label.isNotEmpty) ...[
             const SizedBox(width: 8),
@@ -437,6 +439,65 @@ class PlatformSlider extends StatelessWidget {
       divisions: divisions,
       label: label,
       onChanged: onChanged,
+    );
+  }
+}
+
+class PlatformSliderTile extends StatelessWidget {
+  const PlatformSliderTile({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.divisions,
+    required this.label,
+    required this.onChanged,
+  });
+
+  final Widget title;
+  final double value;
+  final double min;
+  final double max;
+  final int divisions;
+  final String label;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (usesCupertinoPresentation) {
+      return CupertinoListTile(
+        title: title,
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: PlatformSlider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: divisions,
+            label: label,
+            onChanged: onChanged,
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          title,
+          const SizedBox(height: 4),
+          PlatformSlider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: divisions,
+            label: label,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
     );
   }
 }

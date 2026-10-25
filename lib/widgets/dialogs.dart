@@ -305,7 +305,7 @@ Future<bool> confirm(
 void showSnack(BuildContext context, String message, {SnackBarAction? action}) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(message), action: action));
+    ..showSnackBar(SnackBar(content: Text(message), action: action, duration: Duration(seconds: 4)));
 }
 
 /// Runs [task] while showing a small blocking progress dialog.
