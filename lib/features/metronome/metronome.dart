@@ -26,7 +26,8 @@ enum BeatAccent {
   normal,
   mute;
 
-  BeatAccent get next => BeatAccent.values[(index + 1) % BeatAccent.values.length];
+  BeatAccent get next =>
+      BeatAccent.values[(index + 1) % BeatAccent.values.length];
 }
 
 enum ClickSound {
@@ -57,7 +58,12 @@ class MetronomeSettings {
     this.bpm = 100,
     this.beats = 4,
     this.subdivision = Subdivision.none,
-    this.accents = const [BeatAccent.accent, BeatAccent.normal, BeatAccent.normal, BeatAccent.normal],
+    this.accents = const [
+      BeatAccent.accent,
+      BeatAccent.normal,
+      BeatAccent.normal,
+      BeatAccent.normal,
+    ],
     this.sound = ClickSound.click,
     this.volume = 0.8,
     this.flash = true,
@@ -91,7 +97,10 @@ class MetronomeSettings {
     final source = accents ?? this.accents;
     // Keep the pattern when the bar gets longer or shorter; new beats are plain.
     final fitted = [
-      for (var i = 0; i < b; i++) i < source.length ? source[i] : (i == 0 ? BeatAccent.accent : BeatAccent.normal),
+      for (var i = 0; i < b; i++)
+        i < source.length
+            ? source[i]
+            : (i == 0 ? BeatAccent.accent : BeatAccent.normal),
     ];
     return MetronomeSettings(
       bpm: (bpm ?? this.bpm).clamp(minBpm, maxBpm),
@@ -122,7 +131,10 @@ class MetronomeSettings {
       bpm: (j['bpm'] as num?)?.toInt(),
       beats: (j['beats'] as num?)?.toInt(),
       subdivision: pick(Subdivision.values, j['subdivision'], d.subdivision),
-      accents: [for (final a in (j['accents'] as List? ?? const [])) pick(BeatAccent.values, a, BeatAccent.normal)],
+      accents: [
+        for (final a in (j['accents'] as List? ?? const []))
+          pick(BeatAccent.values, a, BeatAccent.normal),
+      ],
       sound: pick(ClickSound.values, j['sound'], d.sound),
       volume: (j['volume'] as num?)?.toDouble(),
       flash: j['flash'] as bool?,
@@ -155,8 +167,13 @@ Float32List _click(ClickSound sound, _Level level) {
     final attack = math.min(1.0, t / 0.0005);
     final v = switch (sound) {
       ClickSound.click => math.sin(tau * f * t) * math.exp(-t / 0.006),
-      ClickSound.wood => (math.sin(tau * f * t) + 0.45 * math.sin(tau * f * 2.76 * t)) / 1.45 * math.exp(-t / 0.011),
-      ClickSound.beep => math.sin(tau * f * t) * (t < 0.035 ? 1.0 : math.exp(-(t - 0.035) / 0.003)),
+      ClickSound.wood =>
+        (math.sin(tau * f * t) + 0.45 * math.sin(tau * f * 2.76 * t)) /
+            1.45 *
+            math.exp(-t / 0.011),
+      ClickSound.beep =>
+        math.sin(tau * f * t) *
+            (t < 0.035 ? 1.0 : math.exp(-(t - 0.035) / 0.003)),
     };
     out[i] = (v * attack * gain).toDouble();
   }
@@ -179,7 +196,8 @@ Uint8List buildBarWav(MetronomeSettings s) {
               BeatAccent.mute => null,
             };
       if (level == null) continue;
-      final start = ((beat + k / perBeat) * s.beatSeconds * _sampleRate).round();
+      final start = ((beat + k / perBeat) * s.beatSeconds * _sampleRate)
+          .round();
       final c = clicks[level]!;
       // Wrap around so a click near the end of the bar continues into the loop.
       for (var i = 0; i < c.length; i++) {
@@ -209,7 +227,11 @@ Uint8List buildBarWav(MetronomeSettings s) {
   ascii(36, 'data');
   data.setUint32(40, length * 2, Endian.little);
   for (var i = 0; i < length; i++) {
-    data.setInt16(44 + i * 2, (mix[i].clamp(-1.0, 1.0) * 32000).round(), Endian.little);
+    data.setInt16(
+      44 + i * 2,
+      (mix[i].clamp(-1.0, 1.0) * 32000).round(),
+      Endian.little,
+    );
   }
   return data.buffer.asUint8List();
 }
@@ -223,11 +245,14 @@ class TapTempo {
 
   int? tap([DateTime? now]) {
     now ??= DateTime.now();
-    if (_taps.isNotEmpty && now.difference(_taps.last) > const Duration(seconds: 2)) _taps.clear();
+    if (_taps.isNotEmpty &&
+        now.difference(_taps.last) > const Duration(seconds: 2))
+      _taps.clear();
     _taps.add(now);
     if (_taps.length > 5) _taps.removeAt(0);
     if (_taps.length < 2) return null;
-    final span = _taps.last.difference(_taps.first).inMicroseconds / (_taps.length - 1);
+    final span =
+        _taps.last.difference(_taps.first).inMicroseconds / (_taps.length - 1);
     return (60e6 / span).round().clamp(minBpm, maxBpm);
   }
 }
@@ -237,7 +262,9 @@ class Metronome extends ChangeNotifier {
     final raw = _prefs.getString(_key);
     if (raw != null) {
       try {
-        _settings = MetronomeSettings.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+        _settings = MetronomeSettings.fromJson(
+          jsonDecode(raw) as Map<String, dynamic>,
+        );
       } catch (_) {}
     }
   }
@@ -257,6 +284,7 @@ class Metronome extends ChangeNotifier {
   int _generation = 0;
   Timer? _rebuild;
   bool _disposed = false;
+  final Stopwatch _playbackClock = Stopwatch();
 
   void update(MetronomeSettings Function(MetronomeSettings s) change) {
     final next = change(_settings);
@@ -296,7 +324,9 @@ class Metronome extends ChangeNotifier {
         _silence();
       }
       _tapEnd?.cancel();
-      final beat = Duration(microseconds: (60e6 / (bpm ?? _settings.bpm)).round());
+      final beat = Duration(
+        microseconds: (60e6 / (bpm ?? _settings.bpm)).round(),
+      );
       _tapEnd = Timer(beat * 2, () {
         _tapping = false;
         if (_running) _play();
@@ -324,6 +354,9 @@ class Metronome extends ChangeNotifier {
   Future<void> start() async {
     if (_running) return;
     _running = true;
+    _playbackClock
+      ..reset()
+      ..start();
     notifyListeners();
     await _play();
   }
@@ -333,6 +366,7 @@ class Metronome extends ChangeNotifier {
     _tapEnd?.cancel();
     _tapping = false;
     _running = false;
+    _playbackClock.stop();
     _generation++;
     if (!_disposed) notifyListeners();
     await _release(_handle, _source);
@@ -351,10 +385,17 @@ class Metronome extends ChangeNotifier {
         await soloud.disposeSource(source);
         return;
       }
-      final handle = await soloud.play(source, volume: _settings.volume, looping: true);
+      final handle = await soloud.play(
+        source,
+        volume: _settings.volume,
+        looping: true,
+      );
       final (oldHandle, oldSource) = (_handle, _source);
       _handle = handle;
       _source = source;
+      _playbackClock
+        ..reset()
+        ..start();
       await _release(oldHandle, oldSource);
     } catch (e) {
       debugPrint('Metronome failed: $e');
@@ -372,18 +413,11 @@ class Metronome extends ChangeNotifier {
     } catch (_) {}
   }
 
-  /// The beat being heard right now, read from the audio clock so visuals stay in sync.
+  /// Uses a monotonic clock so visual beats do not depend on audio position updates.
   MetronomePulse? pulse() {
-    final h = _handle;
-    if (!_running || h == null) return null;
-    final Duration pos;
-    try {
-      pos = SoLoud.instance.getPosition(h);
-    } catch (_) {
-      return null;
-    }
+    if (!_running || _tapping) return null;
     final s = _settings;
-    final t = (pos.inMicroseconds / 1e6) % s.barSeconds;
+    final t = (_playbackClock.elapsedMicroseconds / 1e6) % s.barSeconds;
     final beat = (t / s.beatSeconds).floor().clamp(0, s.beats - 1);
     final inBeat = t - beat * s.beatSeconds;
     final sub = (inBeat / (s.beatSeconds / s.subdivision.clicks)).floor();

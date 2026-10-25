@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
+import '../../widgets/platform_widgets.dart';
 import 'metronome.dart';
 
 /// Material Icons has no metronome, so this draws the classic one: a pyramid with a swinging arm.
@@ -17,7 +19,10 @@ class MetronomeIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = IconTheme.of(context);
     final s = size ?? theme.size ?? 24;
-    return CustomPaint(size: Size.square(s), painter: _MetronomePainter(color ?? theme.color ?? Colors.black));
+    return CustomPaint(
+      size: Size.square(s),
+      painter: _MetronomePainter(color ?? theme.color ?? Colors.black),
+    );
   }
 }
 
@@ -61,7 +66,8 @@ class _PulseBuilder extends StatefulWidget {
   State<_PulseBuilder> createState() => _PulseBuilderState();
 }
 
-class _PulseBuilderState extends State<_PulseBuilder> with SingleTickerProviderStateMixin {
+class _PulseBuilderState extends State<_PulseBuilder>
+    with SingleTickerProviderStateMixin {
   late final Ticker _ticker = createTicker(_tick);
   MetronomePulse? _pulse;
 
@@ -83,7 +89,8 @@ class _PulseBuilderState extends State<_PulseBuilder> with SingleTickerProviderS
 
   void _tick(Duration _) {
     final p = widget.metronome.pulse();
-    if (p?.beat != _pulse?.beat || p?.sub != _pulse?.sub) setState(() => _pulse = p);
+    if (p?.beat != _pulse?.beat || p?.sub != _pulse?.sub)
+      setState(() => _pulse = p);
   }
 
   @override
@@ -99,7 +106,11 @@ class _PulseBuilderState extends State<_PulseBuilder> with SingleTickerProviderS
 
 /// The beat dots: tap one to cycle accent → normal → mute.
 class _BeatDots extends StatelessWidget {
-  const _BeatDots({required this.metronome, required this.size, this.editable = true});
+  const _BeatDots({
+    required this.metronome,
+    required this.size,
+    this.editable = true,
+  });
 
   final Metronome metronome;
   final double size;
@@ -149,10 +160,21 @@ class _BeatDots extends StatelessWidget {
           color: active ? scheme.tertiary : scheme.outline,
           width: accent == BeatAccent.mute ? 1.5 : (active ? 2.5 : 1),
         ),
-        boxShadow: active ? [BoxShadow(color: scheme.tertiary.withValues(alpha: 0.5), blurRadius: size * 0.4)] : null,
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: scheme.tertiary.withValues(alpha: 0.5),
+                  blurRadius: size * 0.4,
+                ),
+              ]
+            : null,
       ),
       child: accent == BeatAccent.accent && size >= 20
-          ? Icon(Icons.keyboard_arrow_up, size: size * 0.7, color: active ? scheme.onTertiary : scheme.onPrimary)
+          ? Icon(
+              Icons.keyboard_arrow_up,
+              size: size * 0.7,
+              color: active ? scheme.onTertiary : scheme.onPrimary,
+            )
           : null,
     );
   }
@@ -160,7 +182,11 @@ class _BeatDots extends StatelessWidget {
 
 /// A button that repeats while held, speeding up (for ±1 BPM).
 class _RepeatButton extends StatefulWidget {
-  const _RepeatButton({required this.icon, required this.tooltip, required this.onStep});
+  const _RepeatButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onStep,
+  });
 
   final IconData icon;
   final String tooltip;
@@ -197,16 +223,36 @@ class _RepeatButtonState extends State<_RepeatButton> {
 
   @override
   Widget build(BuildContext context) {
+    final button = usesCupertinoPresentation
+        ? CupertinoButton(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(44, 44),
+            onPressed: widget.onStep,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(
+                color: CupertinoColors.tertiarySystemFill,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                widget.icon == Icons.remove
+                    ? CupertinoIcons.minus
+                    : CupertinoIcons.plus,
+              ),
+            ),
+          )
+        : IconButton.filledTonal(
+            iconSize: 28,
+            tooltip: widget.tooltip,
+            icon: Icon(widget.icon),
+            onPressed: widget.onStep,
+          );
     return GestureDetector(
       onLongPressStart: (_) => _start(),
       onLongPressEnd: (_) => _stop(),
       onLongPressCancel: _stop,
-      child: IconButton.filledTonal(
-        iconSize: 28,
-        tooltip: widget.tooltip,
-        icon: Icon(widget.icon),
-        onPressed: widget.onStep,
-      ),
+      child: button,
     );
   }
 }
@@ -232,198 +278,344 @@ class MetronomePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final content = ListenableBuilder(
+      listenable: metronome,
+      builder: (context, _) {
+        final s = metronome.settings;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  MetronomeIcon(color: scheme.primary, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Metronome',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ),
+                  if (usesCupertinoPresentation)
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: onClose,
+                      child: const Icon(CupertinoIcons.xmark),
+                    )
+                  else
+                    IconButton(
+                      tooltip: 'Close',
+                      icon: const Icon(Icons.close),
+                      onPressed: onClose,
+                    ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Tempo
+                    Row(
+                      children: [
+                        _RepeatButton(
+                          icon: Icons.remove,
+                          tooltip: '−1 BPM',
+                          onStep: () =>
+                              metronome.setBpm(metronome.settings.bpm - 1),
+                        ),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              Text(
+                                '${s.bpm}',
+                                style: theme.textTheme.displayMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                'BPM · ${tempoMarking(s.bpm)}',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        _RepeatButton(
+                          icon: Icons.add,
+                          tooltip: '+1 BPM',
+                          onStep: () =>
+                              metronome.setBpm(metronome.settings.bpm + 1),
+                        ),
+                      ],
+                    ),
+                    Slider.adaptive(
+                      value: s.bpm.toDouble(),
+                      min: minBpm.toDouble(),
+                      max: maxBpm.toDouble(),
+                      divisions: maxBpm - minBpm,
+                      label: '${s.bpm}',
+                      onChanged: (v) => metronome.setBpm(v.round()),
+                    ),
+                    if (songTempo != null && songTempo != s.bpm)
+                      _SongTempoRow(
+                        label: 'Song tempo: $songTempo BPM',
+                        action: 'Use',
+                        onPressed: () => metronome.setBpm(songTempo!),
+                      ),
+                    if (songTempo != s.bpm)
+                      _SongTempoRow(
+                        label: songTempo == null
+                            ? 'No tempo saved for this song'
+                            : 'Keep ${s.bpm} BPM?',
+                        action: 'Save to song',
+                        onPressed: () => onSaveTempo(s.bpm),
+                      ),
+                    const SizedBox(height: 8),
+
+                    // Play / tap
+                    Row(
+                      children: [
+                        Expanded(
+                          child: usesCupertinoPresentation
+                              ? CupertinoButton(
+                                  color: CupertinoColors.tertiarySystemFill,
+                                  onPressed: () {
+                                    HapticFeedback.selectionClick();
+                                    metronome.tap();
+                                  },
+                                  child: Text(
+                                    metronome.tapping
+                                        ? 'Keep tapping…'
+                                        : 'Tap tempo',
+                                  ),
+                                )
+                              : OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(52),
+                                  ),
+                                  onPressed: () {
+                                    HapticFeedback.selectionClick();
+                                    metronome.tap();
+                                  },
+                                  child: Text(
+                                    metronome.tapping
+                                        ? 'Keep tapping…'
+                                        : 'Tap tempo',
+                                  ),
+                                ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: usesCupertinoPresentation
+                              ? CupertinoButton.filled(
+                                  onPressed: metronome.toggle,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        metronome.running
+                                            ? CupertinoIcons.stop_fill
+                                            : CupertinoIcons.play_fill,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        metronome.running ? 'Stop' : 'Start',
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : FilledButton.icon(
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(52),
+                                  ),
+                                  onPressed: metronome.toggle,
+                                  icon: Icon(
+                                    metronome.running
+                                        ? Icons.stop_rounded
+                                        : Icons.play_arrow_rounded,
+                                    size: 28,
+                                  ),
+                                  label: Text(
+                                    metronome.running ? 'Stop' : 'Start',
+                                  ),
+                                ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Bar
+                    _BeatDots(metronome: metronome, size: 30),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Tap a beat: accent → normal → mute',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _Labeled(
+                      label: 'Beats per bar',
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (usesCupertinoPresentation)
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: s.beats > 1
+                                  ? () => metronome.update(
+                                      (s) => s.copyWith(beats: s.beats - 1),
+                                    )
+                                  : null,
+                              child: const Icon(CupertinoIcons.minus_circle),
+                            )
+                          else
+                            IconButton(
+                              icon: const Icon(Icons.remove_circle_outline),
+                              onPressed: s.beats > 1
+                                  ? () => metronome.update(
+                                      (s) => s.copyWith(beats: s.beats - 1),
+                                    )
+                                  : null,
+                            ),
+                          SizedBox(
+                            width: 44,
+                            child: Text(
+                              '${s.beats}/4',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.titleMedium,
+                            ),
+                          ),
+                          if (usesCupertinoPresentation)
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: s.beats < maxBeats
+                                  ? () => metronome.update(
+                                      (s) => s.copyWith(beats: s.beats + 1),
+                                    )
+                                  : null,
+                              child: const Icon(CupertinoIcons.add_circled),
+                            )
+                          else
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline),
+                              onPressed: s.beats < maxBeats
+                                  ? () => metronome.update(
+                                      (s) => s.copyWith(beats: s.beats + 1),
+                                    )
+                                  : null,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Subdivision', style: theme.textTheme.labelLarge),
+                    const SizedBox(height: 6),
+                    _MetronomeSegment<Subdivision>(
+                      values: Subdivision.values,
+                      selected: s.subdivision,
+                      label: (d) => d.label,
+                      onSelected: (d) =>
+                          metronome.update((s) => s.copyWith(subdivision: d)),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Sound', style: theme.textTheme.labelLarge),
+                    const SizedBox(height: 6),
+                    _MetronomeSegment<ClickSound>(
+                      values: ClickSound.values,
+                      selected: s.sound,
+                      label: (c) => c.label,
+                      onSelected: (c) =>
+                          metronome.update((s) => s.copyWith(sound: c)),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          usesCupertinoPresentation
+                              ? CupertinoIcons.volume_down
+                              : Icons.volume_down,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                        Expanded(
+                          child: Slider.adaptive(
+                            value: s.volume,
+                            onChanged: (v) =>
+                                metronome.update((s) => s.copyWith(volume: v)),
+                          ),
+                        ),
+                        Icon(
+                          usesCupertinoPresentation
+                              ? CupertinoIcons.volume_up
+                              : Icons.volume_up,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                    if (usesCupertinoPresentation)
+                      CupertinoListTile(
+                        title: const Text('Flash on beat'),
+                        subtitle: const Text('Visual pulse at the screen edge'),
+                        trailing: CupertinoSwitch(
+                          value: s.flash,
+                          onChanged: (v) =>
+                              metronome.update((s) => s.copyWith(flash: v)),
+                        ),
+                      )
+                    else
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Flash on beat'),
+                        subtitle: const Text('Visual pulse at the screen edge'),
+                        value: s.flash,
+                        onChanged: (v) =>
+                            metronome.update((s) => s.copyWith(flash: v)),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (usesCupertinoPresentation) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
+            context,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x26000000),
+              blurRadius: 22,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: content,
+        ),
+      );
+    }
     return Material(
       elevation: 8,
       shadowColor: Colors.black54,
       color: scheme.surfaceContainerHigh,
       borderRadius: BorderRadius.circular(24),
       clipBehavior: Clip.antiAlias,
-      child: ListenableBuilder(
-        listenable: metronome,
-        builder: (context, _) {
-          final s = metronome.settings;
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 8, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    MetronomeIcon(color: scheme.primary, size: 22),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text('Metronome', style: theme.textTheme.titleMedium)),
-                    IconButton(tooltip: 'Close', icon: const Icon(Icons.close), onPressed: onClose),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Tempo
-                      Row(
-                        children: [
-                          _RepeatButton(
-                            icon: Icons.remove,
-                            tooltip: '−1 BPM',
-                            onStep: () => metronome.setBpm(metronome.settings.bpm - 1),
-                          ),
-                          Expanded(
-                            child: Column(
-                              children: [
-                                Text(
-                                  '${s.bpm}',
-                                  style: theme.textTheme.displayMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    fontFeatures: const [FontFeature.tabularFigures()],
-                                  ),
-                                ),
-                                Text(
-                                  'BPM · ${tempoMarking(s.bpm)}',
-                                  style: theme.textTheme.labelLarge?.copyWith(color: scheme.onSurfaceVariant),
-                                ),
-                              ],
-                            ),
-                          ),
-                          _RepeatButton(
-                            icon: Icons.add,
-                            tooltip: '+1 BPM',
-                            onStep: () => metronome.setBpm(metronome.settings.bpm + 1),
-                          ),
-                        ],
-                      ),
-                      Slider(
-                        value: s.bpm.toDouble(),
-                        min: minBpm.toDouble(),
-                        max: maxBpm.toDouble(),
-                        divisions: maxBpm - minBpm,
-                        label: '${s.bpm}',
-                        onChanged: (v) => metronome.setBpm(v.round()),
-                      ),
-                      if (songTempo != null && songTempo != s.bpm)
-                        _SongTempoRow(
-                          label: 'Song tempo: $songTempo BPM',
-                          action: 'Use',
-                          onPressed: () => metronome.setBpm(songTempo!),
-                        ),
-                      if (songTempo != s.bpm)
-                        _SongTempoRow(
-                          label: songTempo == null ? 'No tempo saved for this song' : 'Keep ${s.bpm} BPM?',
-                          action: 'Save to song',
-                          onPressed: () => onSaveTempo(s.bpm),
-                        ),
-                      const SizedBox(height: 8),
-
-                      // Play / tap
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                              onPressed: () {
-                                HapticFeedback.selectionClick();
-                                metronome.tap();
-                              },
-                              child: Text(metronome.tapping ? 'Keep tapping…' : 'Tap tempo'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: FilledButton.icon(
-                              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                              onPressed: metronome.toggle,
-                              icon: Icon(metronome.running ? Icons.stop_rounded : Icons.play_arrow_rounded, size: 28),
-                              label: Text(metronome.running ? 'Stop' : 'Start'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-
-                      // Bar
-                      _BeatDots(metronome: metronome, size: 30),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Tap a beat: accent → normal → mute',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-                      ),
-                      const SizedBox(height: 12),
-                      _Labeled(
-                        label: 'Beats per bar',
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.remove_circle_outline),
-                              onPressed: s.beats > 1
-                                  ? () => metronome.update((s) => s.copyWith(beats: s.beats - 1))
-                                  : null,
-                            ),
-                            SizedBox(
-                              width: 44,
-                              child: Text(
-                                '${s.beats}/4',
-                                textAlign: TextAlign.center,
-                                style: theme.textTheme.titleMedium,
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.add_circle_outline),
-                              onPressed: s.beats < maxBeats
-                                  ? () => metronome.update((s) => s.copyWith(beats: s.beats + 1))
-                                  : null,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text('Subdivision', style: theme.textTheme.labelLarge),
-                      const SizedBox(height: 6),
-                      SegmentedButton<Subdivision>(
-                        showSelectedIcon: false,
-                        segments: [for (final d in Subdivision.values) ButtonSegment(value: d, label: Text(d.label))],
-                        selected: {s.subdivision},
-                        onSelectionChanged: (v) => metronome.update((s) => s.copyWith(subdivision: v.first)),
-                      ),
-                      const SizedBox(height: 12),
-                      Text('Sound', style: theme.textTheme.labelLarge),
-                      const SizedBox(height: 6),
-                      SegmentedButton<ClickSound>(
-                        showSelectedIcon: false,
-                        segments: [for (final c in ClickSound.values) ButtonSegment(value: c, label: Text(c.label))],
-                        selected: {s.sound},
-                        onSelectionChanged: (v) => metronome.update((s) => s.copyWith(sound: v.first)),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(Icons.volume_down, color: scheme.onSurfaceVariant),
-                          Expanded(
-                            child: Slider(
-                              value: s.volume,
-                              onChanged: (v) => metronome.update((s) => s.copyWith(volume: v)),
-                            ),
-                          ),
-                          Icon(Icons.volume_up, color: scheme.onSurfaceVariant),
-                        ],
-                      ),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Flash on beat'),
-                        subtitle: const Text('Visual pulse at the screen edge'),
-                        value: s.flash,
-                        onChanged: (v) => metronome.update((s) => s.copyWith(flash: v)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+      child: content,
     );
   }
 }
@@ -436,14 +628,20 @@ class _Labeled extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
     children: [
-      Expanded(child: Text(label, style: Theme.of(context).textTheme.labelLarge)),
+      Expanded(
+        child: Text(label, style: Theme.of(context).textTheme.labelLarge),
+      ),
       child,
     ],
   );
 }
 
 class _SongTempoRow extends StatelessWidget {
-  const _SongTempoRow({required this.label, required this.action, required this.onPressed});
+  const _SongTempoRow({
+    required this.label,
+    required this.action,
+    required this.onPressed,
+  });
   final String label;
   final String action;
   final VoidCallback onPressed;
@@ -453,18 +651,78 @@ class _SongTempoRow extends StatelessWidget {
     final theme = Theme.of(context);
     return Row(
       children: [
-        Icon(Icons.music_note_outlined, size: 18, color: theme.colorScheme.onSurfaceVariant),
+        Icon(
+          usesCupertinoPresentation
+              ? CupertinoIcons.music_note
+              : Icons.music_note_outlined,
+          size: 18,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 6),
         Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-        TextButton(onPressed: onPressed, child: Text(action)),
+        if (usesCupertinoPresentation)
+          CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            onPressed: onPressed,
+            child: Text(action),
+          )
+        else
+          TextButton(onPressed: onPressed, child: Text(action)),
       ],
+    );
+  }
+}
+
+class _MetronomeSegment<T extends Enum> extends StatelessWidget {
+  const _MetronomeSegment({
+    required this.values,
+    required this.selected,
+    required this.label,
+    required this.onSelected,
+  });
+
+  final List<T> values;
+  final T selected;
+  final String Function(T) label;
+  final ValueChanged<T> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (usesCupertinoPresentation) {
+      final labelStyle = TextStyle(
+        color: Theme.of(context).colorScheme.onSurface,
+        decoration: TextDecoration.none,
+      );
+      return CupertinoSlidingSegmentedControl<T>(
+        groupValue: selected,
+        children: {
+          for (final value in values)
+            value: Text(label(value), style: labelStyle),
+        },
+        onValueChanged: (value) {
+          if (value != null) onSelected(value);
+        },
+      );
+    }
+    return SegmentedButton<T>(
+      showSelectedIcon: false,
+      segments: [
+        for (final value in values)
+          ButtonSegment(value: value, label: Text(label(value))),
+      ],
+      selected: {selected},
+      onSelectionChanged: (values) => onSelected(values.first),
     );
   }
 }
 
 /// Compact indicator while the metronome runs with the panel closed.
 class MetronomePill extends StatelessWidget {
-  const MetronomePill({super.key, required this.metronome, required this.onOpen});
+  const MetronomePill({
+    super.key,
+    required this.metronome,
+    required this.onOpen,
+  });
 
   final Metronome metronome;
   final VoidCallback onOpen;
@@ -472,39 +730,69 @@ class MetronomePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final content = Padding(
+      padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+      child: ListenableBuilder(
+        listenable: metronome,
+        builder: (context, _) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 140),
+              child: _BeatDots(metronome: metronome, size: 12, editable: false),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '${metronome.settings.bpm}',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(width: 2),
+            if (usesCupertinoPresentation)
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: metronome.stop,
+                child: const Icon(CupertinoIcons.stop_fill),
+              )
+            else
+              IconButton(
+                tooltip: 'Stop metronome',
+                icon: const Icon(Icons.stop_rounded),
+                onPressed: metronome.stop,
+              ),
+          ],
+        ),
+      ),
+    );
+    if (usesCupertinoPresentation) {
+      return GestureDetector(
+        onTap: onOpen,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
+              context,
+            ),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x26000000),
+                blurRadius: 18,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: content,
+        ),
+      );
+    }
     return Material(
       elevation: 6,
       shadowColor: Colors.black54,
       color: scheme.surfaceContainerHigh,
       shape: const StadiumBorder(),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onOpen,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
-          child: ListenableBuilder(
-            listenable: metronome,
-            builder: (context, _) => Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 140),
-                  child: _BeatDots(metronome: metronome, size: 12, editable: false),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  '${metronome.settings.bpm}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-                ),
-                const SizedBox(width: 2),
-                IconButton(tooltip: 'Stop metronome', icon: const Icon(Icons.stop_rounded), onPressed: metronome.stop),
-              ],
-            ),
-          ),
-        ),
-      ),
+      child: InkWell(onTap: onOpen, child: content),
     );
   }
 }
@@ -518,7 +806,8 @@ class MetronomeFlash extends StatefulWidget {
   State<MetronomeFlash> createState() => _MetronomeFlashState();
 }
 
-class _MetronomeFlashState extends State<MetronomeFlash> with SingleTickerProviderStateMixin {
+class _MetronomeFlashState extends State<MetronomeFlash>
+    with SingleTickerProviderStateMixin {
   late final Ticker _ticker = createTicker(_tick);
   final _glow = ValueNotifier<(double, bool)>((0, false));
 
@@ -540,9 +829,14 @@ class _MetronomeFlashState extends State<MetronomeFlash> with SingleTickerProvid
 
   void _tick(Duration _) {
     final p = widget.metronome.pulse();
-    if (p == null) return;
+    if (p == null) {
+      _glow.value = (0, false);
+      return;
+    }
     final accent = widget.metronome.settings.accents[p.beat];
-    final strength = accent == BeatAccent.mute ? 0.0 : (1 - p.sinceBeat / 0.15).clamp(0.0, 1.0);
+    final strength = accent == BeatAccent.mute
+        ? 0.0
+        : (1 - p.sinceBeat / 0.15).clamp(0.0, 1.0);
     _glow.value = (strength, accent == BeatAccent.accent);
   }
 
@@ -563,7 +857,9 @@ class _MetronomeFlashState extends State<MetronomeFlash> with SingleTickerProvid
         builder: (context, g, _) {
           final (strength, accent) = g;
           if (strength <= 0) return const SizedBox.expand();
-          final color = (accent ? scheme.tertiary : scheme.primary).withValues(alpha: strength * 0.9);
+          final color = (accent ? scheme.tertiary : scheme.primary).withValues(
+            alpha: strength * 0.9,
+          );
           return DecoratedBox(
             decoration: BoxDecoration(
               border: Border.all(color: color, width: accent ? 8 : 5),

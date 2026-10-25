@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import '../../widgets/dialogs.dart';
 import 'annotation_model.dart';
 import 'annotation_store.dart';
 import 'tool_state.dart';
@@ -59,10 +60,14 @@ class _AnnotationLayerState extends State<AnnotationLayer> {
 
   PageAnnotations get _current => widget.store.get(widget.songId, widget.page);
 
-  Offset _norm(Offset local) => Offset(local.dx / _size.width, local.dy / _size.height);
+  Offset _norm(Offset local) =>
+      Offset(local.dx / _size.width, local.dy / _size.height);
 
   static double _pressure(PointerEvent e) {
-    if (e.kind != PointerDeviceKind.stylus && e.kind != PointerDeviceKind.invertedStylus) return 0.5;
+    if (e.kind != PointerDeviceKind.stylus &&
+        e.kind != PointerDeviceKind.invertedStylus) {
+      return 0.5;
+    }
     final range = e.pressureMax - e.pressureMin;
     if (range <= 0) return 0.5;
     return ((e.pressure - e.pressureMin) / range).clamp(0.05, 1.0);
@@ -104,7 +109,9 @@ class _AnnotationLayerState extends State<AnnotationLayer> {
   }
 
   void _onDown(PointerDownEvent e) {
-    final isStylus = e.kind == PointerDeviceKind.stylus || e.kind == PointerDeviceKind.invertedStylus;
+    final isStylus =
+        e.kind == PointerDeviceKind.stylus ||
+        e.kind == PointerDeviceKind.invertedStylus;
     if (!isStylus && _isPinching) return;
     if (widget.stylusOnly && !isStylus) {
       _fingerPointer ??= e.pointer;
@@ -116,7 +123,9 @@ class _AnnotationLayerState extends State<AnnotationLayer> {
     _pointerIsTouch = !isStylus;
     _moved = false;
     _downLocal = e.localPosition;
-    final tool = e.kind == PointerDeviceKind.invertedStylus ? AnnoTool.eraser : widget.tools.tool;
+    final tool = e.kind == PointerDeviceKind.invertedStylus
+        ? AnnoTool.eraser
+        : widget.tools.tool;
     _gestureTool = tool;
     final n = _norm(e.localPosition);
     switch (tool) {
@@ -145,32 +154,35 @@ class _AnnotationLayerState extends State<AnnotationLayer> {
   }
 
   InkItem _ink() => InkItem(
-        color: widget.tools.color,
-        width: widget.tools.strokeWidth,
-        highlighter: _gestureTool == AnnoTool.highlighter,
-        points: _points!,
-      );
+    color: widget.tools.color,
+    width: widget.tools.strokeWidth,
+    highlighter: _gestureTool == AnnoTool.highlighter,
+    points: _points!,
+  );
 
   ShapeItem _shape(Offset end) => ShapeItem(
-        color: widget.tools.penColor,
-        kind: switch (_gestureTool) {
-          AnnoTool.rect => ShapeKind.rect,
-          AnnoTool.oval => ShapeKind.oval,
-          _ => ShapeKind.line,
-        },
-        width: widget.tools.strokeWidth,
-        a: _shapeStart!,
-        b: end,
-      );
+    color: widget.tools.penColor,
+    kind: switch (_gestureTool) {
+      AnnoTool.rect => ShapeKind.rect,
+      AnnoTool.oval => ShapeKind.oval,
+      _ => ShapeKind.line,
+    },
+    width: widget.tools.strokeWidth,
+    a: _shapeStart!,
+    b: end,
+  );
 
   void _onMove(PointerMoveEvent e) {
     if (e.pointer != _pointer) return;
-    if (_downLocal != null && (e.localPosition - _downLocal!).distance > 4) _moved = true;
+    if (_downLocal != null && (e.localPosition - _downLocal!).distance > 4) {
+      _moved = true;
+    }
     final n = _norm(e.localPosition);
     switch (_gestureTool) {
       case AnnoTool.pen || AnnoTool.highlighter:
         final pts = _points!;
-        final lx = pts[pts.length - 3] * _size.width, ly = pts[pts.length - 2] * _size.height;
+        final lx = pts[pts.length - 3] * _size.width,
+            ly = pts[pts.length - 2] * _size.height;
         if ((Offset(lx, ly) - e.localPosition).distance < 0.8) return;
         pts.addAll([n.dx, n.dy, _pressure(e)]);
         _draft.value = _ink();
@@ -182,8 +194,14 @@ class _AnnotationLayerState extends State<AnnotationLayer> {
         if (_dragIndex != null && _moved) {
           final delta = _norm(e.localPosition) - _norm(_downLocal!);
           final items = [..._current.items];
-          items[_dragIndex!] = (items[_dragIndex!] as TextItem).copyWith(pos: _dragOrigin! + delta);
-          widget.store.preview(widget.songId, widget.page, PageAnnotations(items));
+          items[_dragIndex!] = (items[_dragIndex!] as TextItem).copyWith(
+            pos: _dragOrigin! + delta,
+          );
+          widget.store.preview(
+            widget.songId,
+            widget.page,
+            PageAnnotations(items),
+          );
         }
       default:
         break;
@@ -193,8 +211,13 @@ class _AnnotationLayerState extends State<AnnotationLayer> {
   void _eraseAt(Offset local) {
     final radius = 10.0;
     final items = _current.items;
-    final kept = [for (final it in items) if (!it.hit(local, _size, radius)) it];
-    if (kept.length != items.length) widget.store.preview(widget.songId, widget.page, PageAnnotations(kept));
+    final kept = [
+      for (final it in items)
+        if (!it.hit(local, _size, radius)) it,
+    ];
+    if (kept.length != items.length) {
+      widget.store.preview(widget.songId, widget.page, PageAnnotations(kept));
+    }
   }
 
   Future<void> _onUp(PointerEvent e) async {
@@ -216,10 +239,14 @@ class _AnnotationLayerState extends State<AnnotationLayer> {
     final sid = widget.songId, page = widget.page;
     switch (tool) {
       case AnnoTool.pen || AnnoTool.highlighter:
-        if (_points != null && _points!.isNotEmpty) store.add(sid, page, _ink());
+        if (_points != null && _points!.isNotEmpty) {
+          store.add(sid, page, _ink());
+        }
       case AnnoTool.line || AnnoTool.rect || AnnoTool.oval:
         final end = _norm(local);
-        if ((local - _downLocal!).distance > 6) store.add(sid, page, _shape(end));
+        if ((local - _downLocal!).distance > 6) {
+          store.add(sid, page, _shape(end));
+        }
       case AnnoTool.eraser:
         if (_before != null && !identical(_before!.items, _current.items)) {
           store.commit(sid, page, _current, before: _before);
@@ -235,7 +262,12 @@ class _AnnotationLayerState extends State<AnnotationLayer> {
       case AnnoTool.stamp:
         if (!_moved) {
           final item = TextItem(
-              color: widget.tools.penColor, text: widget.tools.stamp, pos: Offset.zero, size: widget.tools.textSize, stamp: true);
+            color: widget.tools.penColor,
+            text: widget.tools.stamp,
+            pos: Offset.zero,
+            size: widget.tools.textSize,
+            stamp: true,
+          );
           final tp = item.layout(_size);
           final pos = _norm(local - Offset(tp.width / 2, tp.height / 2));
           store.add(sid, page, item.copyWith(pos: pos));
@@ -250,7 +282,12 @@ class _AnnotationLayerState extends State<AnnotationLayer> {
     if (e.pointer == _fingerPointer) _fingerPointer = null;
     if (e.pointer != _pointer) return;
     if (_before != null && !identical(_before!.items, _current.items)) {
-      widget.store.commit(widget.songId, widget.page, _current, before: _before);
+      widget.store.commit(
+        widget.songId,
+        widget.page,
+        _current,
+        before: _before,
+      );
     }
     _reset();
   }
@@ -271,13 +308,26 @@ class _AnnotationLayerState extends State<AnnotationLayer> {
     final sid = widget.songId, page = widget.page;
     final text = await _textDialog(context, initial: '');
     if (text == null || text.$1.isEmpty) return;
-    widget.store.add(sid, page, TextItem(color: widget.tools.penColor, text: text.$1, pos: pos, size: widget.tools.textSize));
+    widget.store.add(
+      sid,
+      page,
+      TextItem(
+        color: widget.tools.penColor,
+        text: text.$1,
+        pos: pos,
+        size: widget.tools.textSize,
+      ),
+    );
   }
 
   Future<void> _editText(int index) async {
     final sid = widget.songId, page = widget.page;
     final item = _current.items[index] as TextItem;
-    final result = await _textDialog(context, initial: item.text, editing: true);
+    final result = await _textDialog(
+      context,
+      initial: item.text,
+      editing: true,
+    );
     if (result == null) return;
     final items = [...widget.store.get(sid, page).items];
     final at = items.indexOf(item);
@@ -292,27 +342,32 @@ class _AnnotationLayerState extends State<AnnotationLayer> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, c) {
-      _size = c.biggest;
-      final painted = ListenableBuilder(
-        listenable: widget.store,
-        builder: (context, _) => RepaintBoundary(
-          child: CustomPaint(size: _size, painter: _ItemsPainter(_current.items)),
-        ),
-      );
-      final draft = IgnorePointer(
-        child: CustomPaint(size: _size, painter: _DraftPainter(_draft)),
-      );
-      if (!widget.editable) return Stack(children: [painted]);
-      return Listener(
-        behavior: HitTestBehavior.opaque,
-        onPointerDown: _onDown,
-        onPointerMove: _onMove,
-        onPointerUp: _onUp,
-        onPointerCancel: _onCancel,
-        child: Stack(children: [painted, draft]),
-      );
-    });
+    return LayoutBuilder(
+      builder: (context, c) {
+        _size = c.biggest;
+        final painted = ListenableBuilder(
+          listenable: widget.store,
+          builder: (context, _) => RepaintBoundary(
+            child: CustomPaint(
+              size: _size,
+              painter: _ItemsPainter(_current.items),
+            ),
+          ),
+        );
+        final draft = IgnorePointer(
+          child: CustomPaint(size: _size, painter: _DraftPainter(_draft)),
+        );
+        if (!widget.editable) return Stack(children: [painted]);
+        return Listener(
+          behavior: HitTestBehavior.opaque,
+          onPointerDown: _onDown,
+          onPointerMove: _onMove,
+          onPointerUp: _onUp,
+          onPointerCancel: _onCancel,
+          child: Stack(children: [painted, draft]),
+        );
+      },
+    );
   }
 }
 
@@ -346,27 +401,41 @@ class _DraftPainter extends CustomPainter {
 }
 
 /// Returns (text, delete?) or null when cancelled.
-Future<(String, bool)?> _textDialog(BuildContext context, {required String initial, bool editing = false}) {
+Future<(String, bool)?> _textDialog(
+  BuildContext context, {
+  required String initial,
+  bool editing = false,
+}) {
   final controller = TextEditingController(text: initial);
-  return showDialog<(String, bool)>(
+  return showPlatformDialog<(String, bool)>(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (context) => AlertDialog.adaptive(
       title: Text(editing ? 'Edit text' : 'Add text'),
-      content: TextField(
+      content: platformTextField(
         controller: controller,
-        autofocus: true,
-        minLines: 1,
+        hint: 'Text',
         maxLines: 4,
-        decoration: const InputDecoration(hintText: 'Text'),
       ),
       actions: [
         if (editing)
-          TextButton(
+          platformDialogAction(
+            context,
+            label: 'Delete',
+            isDestructive: true,
             onPressed: () => Navigator.pop(context, ('', true)),
-            child: Text('Delete', style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.pop(context, (controller.text.trim(), false)), child: const Text('Done')),
+        platformDialogAction(
+          context,
+          label: 'Cancel',
+          onPressed: () => Navigator.pop(context),
+        ),
+        platformDialogAction(
+          context,
+          label: 'Done',
+          isDefault: true,
+          onPressed: () =>
+              Navigator.pop(context, (controller.text.trim(), false)),
+        ),
       ],
     ),
   );

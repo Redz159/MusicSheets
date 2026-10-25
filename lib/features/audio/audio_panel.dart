@@ -1,7 +1,9 @@
 import 'package:flutter/gestures.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/db.dart';
+import '../../widgets/platform_widgets.dart';
 import 'audio_playback.dart';
 
 String _time(Duration d) {
@@ -45,13 +47,7 @@ class AudioPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    return Material(
-      elevation: 8,
-      shadowColor: Colors.black54,
-      color: scheme.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(24),
-      clipBehavior: Clip.antiAlias,
-      child: ListenableBuilder(
+    final content = ListenableBuilder(
         listenable: playback,
         builder: (context, _) {
           final current = playback.clip;
@@ -63,11 +59,39 @@ class AudioPanel extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.headphones_outlined, color: scheme.primary, size: 22),
+                    Icon(
+                      usesCupertinoPresentation
+                          ? CupertinoIcons.headphones
+                          : Icons.headphones_outlined,
+                      color: scheme.primary,
+                      size: 22,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(child: Text('Recordings', style: theme.textTheme.titleMedium)),
-                    IconButton(tooltip: 'Add audio file', icon: const Icon(Icons.upload_file), onPressed: onAdd),
-                    IconButton(tooltip: 'Close', icon: const Icon(Icons.close), onPressed: onClose),
+                    if (usesCupertinoPresentation)
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: onAdd,
+                        child: const Icon(CupertinoIcons.add),
+                      )
+                    else
+                      IconButton(
+                        tooltip: 'Add audio file',
+                        icon: const Icon(Icons.upload_file),
+                        onPressed: onAdd,
+                      ),
+                    if (usesCupertinoPresentation)
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: onClose,
+                        child: const Icon(CupertinoIcons.xmark),
+                      )
+                    else
+                      IconButton(
+                        tooltip: 'Close',
+                        icon: const Icon(Icons.close),
+                        onPressed: onClose,
+                      ),
                   ],
                 ),
                 if (current != null) ...[
@@ -75,7 +99,7 @@ class AudioPanel extends StatelessWidget {
                     padding: const EdgeInsets.only(right: 8),
                     child: _Player(playback: playback, clip: current),
                   ),
-                  const Divider(height: 20),
+                  if (!usesCupertinoPresentation) const Divider(height: 20),
                 ],
                 if (clips.isEmpty)
                   Padding(
@@ -88,17 +112,54 @@ class AudioPanel extends StatelessWidget {
                           style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 12),
-                        FilledButton.icon(
-                          onPressed: onAdd,
-                          icon: const Icon(Icons.upload_file),
-                          label: const Text('Add audio file'),
-                        ),
+                        if (usesCupertinoPresentation)
+                          CupertinoButton.filled(
+                            onPressed: onAdd,
+                            child: const Text('Add audio file'),
+                          )
+                        else
+                          FilledButton.icon(
+                            onPressed: onAdd,
+                            icon: const Icon(Icons.upload_file),
+                            label: const Text('Add audio file'),
+                          ),
                       ],
                     ),
                   )
                 else
                   for (final c in clips)
-                    ListTile(
+                    usesCupertinoPresentation
+                        ? CupertinoListTile(
+                            leading: CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: () => onPlay(c),
+                              child: Icon(
+                                current?.id == c.id && playback.playing
+                                    ? CupertinoIcons.pause_fill
+                                    : CupertinoIcons.play_fill,
+                              ),
+                            ),
+                            title: Text(
+                              c.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(clipSubtitle(c)),
+                            onTap: () => onPlay(c),
+                            trailing: PlatformMenuButton<String>(
+                              tooltip: 'Recording actions',
+                              icon: const Icon(Icons.more_vert),
+                              cupertinoIcon: CupertinoIcons.ellipsis,
+                              onSelected: (v) => switch (v) {
+                                'mark' => onMarkPart(c),
+                                'whole' => onWholeSong(c),
+                                'rename' => onRename(c),
+                                _ => onDelete(c),
+                              },
+                              actions: _clipActions(c),
+                            ),
+                          )
+                        : ListTile(
                       contentPadding: const EdgeInsets.only(right: 0),
                       leading: IconButton.filledTonal(
                         isSelected: current?.id == c.id,
@@ -118,44 +179,83 @@ class AudioPanel extends StatelessWidget {
                         ],
                       ),
                       onTap: () => onPlay(c),
-                      trailing: PopupMenuButton<String>(
+                      trailing: PlatformMenuButton<String>(
+                        tooltip: 'Recording actions',
+                        icon: const Icon(Icons.more_vert),
+                        cupertinoIcon: CupertinoIcons.ellipsis,
                         onSelected: (v) => switch (v) {
                           'mark' => onMarkPart(c),
                           'whole' => onWholeSong(c),
                           'rename' => onRename(c),
                           _ => onDelete(c),
                         },
-                        itemBuilder: (_) => [
-                          PopupMenuItem(
-                            value: 'mark',
-                            child: ListTile(
-                              leading: const Icon(Icons.highlight_alt),
-                              title: Text(c.area == null ? 'Mark part on sheet' : 'Change marked part'),
-                            ),
-                          ),
-                          if (c.area != null)
-                            const PopupMenuItem(
-                              value: 'whole',
-                              child: ListTile(leading: Icon(Icons.queue_music), title: Text('Use for whole song')),
-                            ),
-                          const PopupMenuItem(
-                            value: 'rename',
-                            child: ListTile(leading: Icon(Icons.edit_outlined), title: Text('Rename')),
-                          ),
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: ListTile(leading: Icon(Icons.delete_outline), title: Text('Delete')),
-                          ),
-                        ],
+                        actions: _clipActions(c),
                       ),
                     ),
               ],
             ),
           );
         },
-      ),
+      );
+    if (usesCupertinoPresentation) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
+            context,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x30000000),
+              blurRadius: 22,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: content,
+        ),
+      );
+    }
+    return Material(
+      elevation: 8,
+      shadowColor: Colors.black54,
+      color: scheme.surfaceContainerHigh,
+      borderRadius: BorderRadius.circular(24),
+      clipBehavior: Clip.antiAlias,
+      child: content,
     );
   }
+
+  List<PlatformMenuAction<String>> _clipActions(AudioClip clip) => [
+    PlatformMenuAction(
+      value: 'mark',
+      icon: Icons.highlight_alt,
+      cupertinoIcon: CupertinoIcons.crop,
+      title: clip.area == null ? 'Mark part on sheet' : 'Change marked part',
+    ),
+    if (clip.area != null)
+      const PlatformMenuAction(
+        value: 'whole',
+        icon: Icons.queue_music,
+        cupertinoIcon: CupertinoIcons.music_note,
+        title: 'Use for whole song',
+      ),
+    const PlatformMenuAction(
+      value: 'rename',
+      icon: Icons.edit_outlined,
+      cupertinoIcon: CupertinoIcons.pencil,
+      title: 'Rename',
+    ),
+    const PlatformMenuAction(
+      value: 'delete',
+      icon: Icons.delete_outline,
+      cupertinoIcon: CupertinoIcons.delete,
+      title: 'Delete',
+      destructive: true,
+    ),
+  ];
 }
 
 class _Player extends StatelessWidget {
@@ -182,7 +282,7 @@ class _Player extends StatelessWidget {
             if (pos > total) pos = total;
             return Column(
               children: [
-                Slider(
+                Slider.adaptive(
                   value: total.inMilliseconds == 0 ? 0 : pos.inMilliseconds / total.inMilliseconds,
                   onChanged: total.inMilliseconds == 0
                       ? null
@@ -205,30 +305,71 @@ class _Player extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            IconButton(
-              tooltip: 'Loop',
-              isSelected: playback.loop,
-              icon: const Icon(Icons.repeat),
-              selectedIcon: Icon(Icons.repeat_on, color: scheme.primary),
-              onPressed: () => playback.setLoop(!playback.loop),
-            ),
-            IconButton(
-              tooltip: 'Back 5 s',
-              icon: const Icon(Icons.replay_5),
-              onPressed: () => playback.skip(const Duration(seconds: -5)),
-            ),
-            IconButton.filled(
-              iconSize: 34,
-              tooltip: playback.playing ? 'Pause' : 'Play',
-              icon: Icon(playback.playing ? Icons.pause : Icons.play_arrow),
-              onPressed: playback.toggle,
-            ),
-            IconButton(
-              tooltip: 'Forward 5 s',
-              icon: const Icon(Icons.forward_5),
-              onPressed: () => playback.skip(const Duration(seconds: 5)),
-            ),
-            IconButton(tooltip: 'Stop', icon: const Icon(Icons.stop), onPressed: playback.stop),
+            if (usesCupertinoPresentation) ...[
+              CupertinoButton(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                onPressed: () => playback.setLoop(!playback.loop),
+                child: Icon(
+                  CupertinoIcons.repeat,
+                  color: playback.loop
+                      ? CupertinoTheme.of(context).primaryColor
+                      : null,
+                ),
+              ),
+              CupertinoButton(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                onPressed: () => playback.skip(const Duration(seconds: -5)),
+                child: const Icon(CupertinoIcons.gobackward),
+              ),
+              CupertinoButton.filled(
+                padding: const EdgeInsets.all(12),
+                onPressed: playback.toggle,
+                child: Icon(
+                  playback.playing
+                      ? CupertinoIcons.pause_fill
+                      : CupertinoIcons.play_fill,
+                ),
+              ),
+              CupertinoButton(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                onPressed: () => playback.skip(const Duration(seconds: 5)),
+                child: const Icon(CupertinoIcons.goforward),
+              ),
+              CupertinoButton(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                onPressed: playback.stop,
+                child: const Icon(CupertinoIcons.stop_fill),
+              ),
+            ] else ...[
+              IconButton(
+                tooltip: 'Loop',
+                isSelected: playback.loop,
+                icon: const Icon(Icons.repeat),
+                selectedIcon: Icon(Icons.repeat_on, color: scheme.primary),
+                onPressed: () => playback.setLoop(!playback.loop),
+              ),
+              IconButton(
+                tooltip: 'Back 5 s',
+                icon: const Icon(Icons.replay_5),
+                onPressed: () => playback.skip(const Duration(seconds: -5)),
+              ),
+              IconButton.filled(
+                iconSize: 34,
+                tooltip: playback.playing ? 'Pause' : 'Play',
+                icon: Icon(playback.playing ? Icons.pause : Icons.play_arrow),
+                onPressed: playback.toggle,
+              ),
+              IconButton(
+                tooltip: 'Forward 5 s',
+                icon: const Icon(Icons.forward_5),
+                onPressed: () => playback.skip(const Duration(seconds: 5)),
+              ),
+              IconButton(
+                tooltip: 'Stop',
+                icon: const Icon(Icons.stop),
+                onPressed: playback.stop,
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 4),
@@ -237,13 +378,34 @@ class _Player extends StatelessWidget {
           spacing: 6,
           children: [
             for (final s in speeds)
-              ChoiceChip(
-                label: Text('${s}x'.replaceAll('.0x', 'x')),
-                selected: playback.speed == s,
-                showCheckmark: false,
-                visualDensity: VisualDensity.compact,
-                onSelected: (_) => playback.setSpeed(s),
-              ),
+              if (usesCupertinoPresentation)
+                CupertinoButton(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  color: playback.speed == s
+                      ? CupertinoTheme.of(context).primaryColor
+                      : CupertinoColors.tertiarySystemFill,
+                  onPressed: () => playback.setSpeed(s),
+                  child: Text(
+                    '${s}x'.replaceAll('.0x', 'x'),
+                    style: TextStyle(
+                      color: playback.speed == s
+                          ? CupertinoColors.white
+                          : CupertinoColors.label,
+                    ),
+                  ),
+                )
+              else
+                ChoiceChip(
+                  label: Text('${s}x'.replaceAll('.0x', 'x')),
+                  selected: playback.speed == s,
+                  showCheckmark: false,
+                  visualDensity: VisualDensity.compact,
+                  onSelected: (_) => playback.setSpeed(s),
+                ),
           ],
         ),
       ],
@@ -262,33 +424,76 @@ class AudioPill extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final clip = playback.clip;
     if (clip == null) return const SizedBox.shrink();
+    final content = Padding(
+          padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (usesCupertinoPresentation)
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: playback.toggle,
+                  child: Icon(
+                    playback.playing
+                        ? CupertinoIcons.pause_fill
+                        : CupertinoIcons.play_fill,
+                  ),
+                )
+              else
+                IconButton(
+                  tooltip: playback.playing ? 'Pause' : 'Play',
+                  icon: Icon(
+                    playback.playing ? Icons.pause : Icons.play_arrow,
+                  ),
+                  onPressed: playback.toggle,
+                ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 200),
+                child: Text(clip.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+              if (usesCupertinoPresentation)
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: playback.stop,
+                  child: const Icon(CupertinoIcons.xmark),
+                )
+              else
+                IconButton(
+                  tooltip: 'Stop',
+                  icon: const Icon(Icons.close),
+                  onPressed: playback.stop,
+                ),
+            ],
+          ),
+        );
+    if (usesCupertinoPresentation) {
+      return GestureDetector(
+        onTap: onOpen,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
+              context,
+            ),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x26000000),
+                blurRadius: 18,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: content,
+        ),
+      );
+    }
     return Material(
       elevation: 6,
       shadowColor: Colors.black54,
       color: scheme.surfaceContainerHigh,
       shape: const StadiumBorder(),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onOpen,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                tooltip: playback.playing ? 'Pause' : 'Play',
-                icon: Icon(playback.playing ? Icons.pause : Icons.play_arrow),
-                onPressed: playback.toggle,
-              ),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 200),
-                child: Text(clip.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-              ),
-              IconButton(tooltip: 'Stop', icon: const Icon(Icons.close), onPressed: playback.stop),
-            ],
-          ),
-        ),
-      ),
+      child: InkWell(onTap: onOpen, child: content),
     );
   }
 }
@@ -389,34 +594,82 @@ class _ClipArea extends StatelessWidget {
             Positioned(
               left: 4,
               top: 4,
-              child: Material(
-                color: color,
-                shape: const StadiumBorder(),
-                elevation: 3,
-                child: InkWell(
-                  customBorder: const StadiumBorder(),
-                  onTap: onPlay,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(6, 4, 12, 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(playing ? Icons.pause : Icons.play_arrow, color: scheme.onPrimary, size: 22),
-                        const SizedBox(width: 4),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: (rect.width - 48).clamp(0, 220)),
-                          child: Text(
-                            clip.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: scheme.onPrimary, fontWeight: FontWeight.w600, fontSize: 13),
+              child: usesCupertinoPresentation
+                  ? CupertinoButton(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      color: CupertinoTheme.of(context).primaryColor,
+                      onPressed: onPlay,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            playing
+                                ? CupertinoIcons.pause_fill
+                                : CupertinoIcons.play_fill,
+                            color: CupertinoColors.white,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 4),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: (rect.width - 48).clamp(0, 220),
+                            ),
+                            child: Text(
+                              clip.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: CupertinoColors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Material(
+                      color: color,
+                      shape: const StadiumBorder(),
+                      elevation: 3,
+                      child: InkWell(
+                        customBorder: const StadiumBorder(),
+                        onTap: onPlay,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(6, 4, 12, 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                playing ? Icons.pause : Icons.play_arrow,
+                                color: scheme.onPrimary,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 4),
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: (rect.width - 48).clamp(0, 220),
+                                ),
+                                child: Text(
+                                  clip.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: scheme.onPrimary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ),
             ),
         ],
       ),
@@ -567,19 +820,38 @@ class _AreaSelectorState extends State<AreaSelector> {
               top: cy - btn / 2,
               width: btn,
               height: btn,
-              child: Material(
-                color: scheme.error,
-                shape: CircleBorder(side: BorderSide(color: scheme.onError, width: 2)),
-                elevation: 3,
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: () => widget.onChanged(null),
-                  child: Tooltip(
-                    message: 'Remove marking',
-                    child: Icon(Icons.close, size: 20, color: scheme.onError),
-                  ),
-                ),
-              ),
+              child: usesCupertinoPresentation
+                  ? CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(btn, btn),
+                      borderRadius: BorderRadius.circular(btn / 2),
+                      color: CupertinoColors.destructiveRed,
+                      onPressed: () => widget.onChanged(null),
+                      child: const Icon(
+                        CupertinoIcons.xmark,
+                        size: 16,
+                        color: CupertinoColors.white,
+                      ),
+                    )
+                  : Material(
+                      color: scheme.error,
+                      shape: CircleBorder(
+                        side: BorderSide(color: scheme.onError, width: 2),
+                      ),
+                      elevation: 3,
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => widget.onChanged(null),
+                        child: Tooltip(
+                          message: 'Remove marking',
+                          child: Icon(
+                            Icons.close,
+                            size: 20,
+                            color: scheme.onError,
+                          ),
+                        ),
+                      ),
+                    ),
             ),
           );
         }

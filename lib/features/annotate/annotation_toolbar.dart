@@ -1,5 +1,7 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../../widgets/platform_widgets.dart';
 import 'annotation_store.dart';
 import 'tool_state.dart';
 
@@ -132,7 +134,17 @@ class AnnotationToolbar extends StatelessWidget {
                   ),
                   // Pinned outside the scrolling tools so it is always reachable.
                   const _Sep(),
-                  FilledButton.icon(onPressed: onDone, icon: const Icon(Icons.check), label: const Text('Done')),
+                  if (usesCupertinoPresentation)
+                    CupertinoButton.filled(
+                      onPressed: onDone,
+                      child: const Text('Done'),
+                    )
+                  else
+                    FilledButton.icon(
+                      onPressed: onDone,
+                      icon: const Icon(Icons.check),
+                      label: const Text('Done'),
+                    ),
                   const SizedBox(width: 4),
                 ],
               ),
@@ -147,19 +159,44 @@ class AnnotationToolbar extends StatelessWidget {
                       for (final s in stamps)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: ChoiceChip(
-                            label: Text(
-                              s,
-                              style: const TextStyle(
-                                fontFamily: 'serif',
-                                fontStyle: FontStyle.italic,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            selected: tools.stamp == s,
-                            showCheckmark: false,
-                            onSelected: (_) => tools.stamp = s,
-                          ),
+                          child: usesCupertinoPresentation
+                              ? CupertinoButton(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 6,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: tools.stamp == s
+                                      ? CupertinoTheme.of(
+                                          context,
+                                        ).primaryColor
+                                      : CupertinoColors.tertiarySystemFill,
+                                  onPressed: () => tools.stamp = s,
+                                  child: Text(
+                                    s,
+                                    style: TextStyle(
+                                      fontFamily: 'serif',
+                                      fontStyle: FontStyle.italic,
+                                      fontWeight: FontWeight.bold,
+                                      color: tools.stamp == s
+                                          ? CupertinoColors.white
+                                          : CupertinoColors.label,
+                                    ),
+                                  ),
+                                )
+                              : ChoiceChip(
+                                  label: Text(
+                                    s,
+                                    style: const TextStyle(
+                                      fontFamily: 'serif',
+                                      fontStyle: FontStyle.italic,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  selected: tools.stamp == s,
+                                  showCheckmark: false,
+                                  onSelected: (_) => tools.stamp = s,
+                                ),
                         ),
                     ],
                   ),
@@ -208,7 +245,17 @@ class _FlyoutState<T> extends State<_Flyout<T>> {
   bool _open = false;
 
   Widget _tappable(T value, bool selected, VoidCallback onTap) =>
-      InkWell(onTap: onTap, customBorder: const CircleBorder(), child: widget.itemBuilder(value, selected));
+      usesCupertinoPresentation
+      ? CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: onTap,
+          child: widget.itemBuilder(value, selected),
+        )
+      : InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: widget.itemBuilder(value, selected),
+        );
 
   @override
   Widget build(BuildContext context) {
@@ -217,39 +264,48 @@ class _FlyoutState<T> extends State<_Flyout<T>> {
         if (widget.ordered || o != widget.selected) o,
     ];
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final current = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        widget.itemBuilder(widget.selected, true),
+        SizedBox(
+          width: 22,
+          height: 42,
+          child: AnimatedRotation(
+            turns: _open ? 0.5 : 0,
+            duration: const Duration(milliseconds: 200),
+            child: Icon(
+              usesCupertinoPresentation
+                  ? CupertinoIcons.chevron_right
+                  : Icons.chevron_right,
+              size: 18,
+              color: muted,
+            ),
+          ),
+        ),
+      ],
+    );
+    void toggle() {
+      if (widget.onTapCurrent?.call(widget.selected) ?? false) return;
+      setState(() => _open = !_open);
+    }
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // The current choice and the arrow form one tap target.
         Tooltip(
           message: widget.tooltip,
-          child: InkWell(
-            onTap: () {
-              if (widget.onTapCurrent?.call(widget.selected) ?? false) return;
-              setState(() => _open = !_open);
-            },
-            customBorder: const StadiumBorder(),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                widget.itemBuilder(widget.selected, true),
-                // The arrow always folds in/out.
-                InkWell(
-                  onTap: () => setState(() => _open = !_open),
+          child: usesCupertinoPresentation
+              ? CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: toggle,
+                  child: current,
+                )
+              : InkWell(
+                  onTap: toggle,
                   customBorder: const StadiumBorder(),
-                  child: SizedBox(
-                    width: 22,
-                    height: 42,
-                    child: AnimatedRotation(
-                      turns: _open ? 0.5 : 0,
-                      duration: const Duration(milliseconds: 200),
-                      child: Icon(Icons.chevron_right, size: 18, color: muted),
-                    ),
-                  ),
+                  child: current,
                 ),
-              ],
-            ),
-          ),
         ),
         AnimatedSize(
           duration: const Duration(milliseconds: 220),
@@ -279,12 +335,36 @@ class _Panel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (usesCupertinoPresentation) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
+            context,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x30000000),
+              blurRadius: 20,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: child,
+        ),
+      );
+    }
     return Material(
       elevation: 6,
       shadowColor: Colors.black45,
       color: Theme.of(context).colorScheme.surfaceContainerHigh,
       borderRadius: BorderRadius.circular(28),
-      child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), child: child),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: child,
+      ),
     );
   }
 }
@@ -323,22 +403,30 @@ class _ToolButton extends StatelessWidget {
         : selected
         ? scheme.onPrimaryContainer
         : scheme.onSurface;
+    final content = AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      width: 42,
+      height: 42,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: selected ? scheme.primaryContainer : Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: tool?.buildIcon(color, size: 22) ?? Icon(icon, size: 22, color: color),
+    );
     return Tooltip(
       message: tooltip,
-      child: InkWell(
+      child: usesCupertinoPresentation
+          ? CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(42, 42),
+              onPressed: onTap,
+              child: content,
+            )
+          : InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          width: 42,
-          height: 42,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? scheme.primaryContainer : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: tool?.buildIcon(color, size: 22) ?? Icon(icon, size: 22, color: color),
-        ),
+        child: content,
       ),
     );
   }
