@@ -1,23 +1,19 @@
-import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import 'platform_widgets.dart';
 
 const paletteColors = [
   0xFF5C6BC0, 0xFF42A5F5, 0xFF26A69A, 0xFF66BB6A, 0xFFFFCA28, //
   0xFFFFA726, 0xFFEF5350, 0xFFEC407A, 0xFFAB47BC, 0xFF8D6E63, 0xFF78909C,
 ];
 
-bool get _usesCupertinoPresentation =>
-    defaultTargetPlatform == TargetPlatform.iOS;
-
 Future<T?> showPlatformDialog<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool barrierDismissible = true,
 }) {
-  if (_usesCupertinoPresentation) {
+  if (usesCupertinoPresentation) {
     return showCupertinoDialog<T>(
       context: context,
       barrierDismissible: barrierDismissible,
@@ -37,7 +33,7 @@ Future<T?> showPlatformSheet<T>({
   bool isScrollControlled = false,
   bool useSafeArea = false,
 }) {
-  if (_usesCupertinoPresentation) {
+  if (usesCupertinoPresentation) {
     return showCupertinoModalPopup<T>(
       context: context,
       builder: (context) {
@@ -71,7 +67,7 @@ Widget platformDialogAction(
   bool isDefault = false,
   bool isDestructive = false,
 }) {
-  if (_usesCupertinoPresentation) {
+  if (usesCupertinoPresentation) {
     return CupertinoDialogAction(
       isDefaultAction: isDefault,
       isDestructiveAction: isDestructive,
@@ -107,7 +103,7 @@ Widget platformTextField({
   ValueChanged<String>? onChanged,
   ValueChanged<String>? onSubmitted,
 }) {
-  if (_usesCupertinoPresentation) {
+  if (usesCupertinoPresentation) {
     return CupertinoTextField(
       controller: controller,
       autofocus: autofocus,
@@ -365,8 +361,7 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            !Platform.isIOS ? 
-              Container(
+            Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: t.colorScheme.primaryContainer,
@@ -377,8 +372,8 @@ class EmptyState extends StatelessWidget {
                 size: 48,
                 color: t.colorScheme.onPrimaryContainer,
               ),
-            ) : Container(),
-            !Platform.isIOS ? const SizedBox(height: 20) : Container(),
+            ),
+            const SizedBox(height: 20),
             Text(
               title,
               style: t.textTheme.titleLarge,

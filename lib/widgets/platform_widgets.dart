@@ -147,21 +147,33 @@ Widget _cupertinoActionIcon(
 }
 
 Widget _navigationAction(Widget action, {Color? foregroundColor}) {
-  if (action is! IconButton) return action;
-  final button = CupertinoButton(
-    padding: EdgeInsets.zero,
-    onPressed: action.onPressed,
-    child: _cupertinoActionIcon(
-      action.isSelected == true
-          ? (action.selectedIcon ?? action.icon)
-          : action.icon,
-      color: action.color ?? foregroundColor,
-      selected: action.isSelected == true,
-    ),
-  );
-  return action.tooltip == null
-      ? button
-      : Tooltip(message: action.tooltip!, child: button);
+  if (action is IconButton) {
+    final button = CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: action.onPressed,
+      child: _cupertinoActionIcon(
+        action.isSelected == true
+            ? (action.selectedIcon ?? action.icon)
+            : action.icon,
+        color: action.color ?? foregroundColor,
+        selected: action.isSelected == true,
+      ),
+    );
+    return action.tooltip == null
+        ? button
+        : Tooltip(message: action.tooltip!, child: button);
+  }
+  if (action is TextButton) {
+    return CupertinoButton(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      onPressed: action.onPressed,
+      child: DefaultTextStyle(
+        style: TextStyle(color: foregroundColor ?? CupertinoColors.activeBlue),
+        child: action.child ?? const SizedBox(),
+      ),
+    );
+  }
+  return action;
 }
 
 class PlatformScaffold extends StatelessWidget {
