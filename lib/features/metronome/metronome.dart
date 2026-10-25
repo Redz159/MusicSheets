@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -378,7 +379,13 @@ class Metronome extends ChangeNotifier {
     final generation = ++_generation;
     final soloud = SoLoud.instance;
     try {
-      if (!soloud.isInitialized) await soloud.init(bufferSize: 1024, channels: Channels.mono);
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        final active = await (await AudioSession.instance).setActive(true);
+        if (!active) {
+          throw StateError('iOS audio session could not be activated.');
+        }
+      }
+      if (!soloud.isInitialized) await soloud.init();
       final wav = buildBarWav(_settings);
       final source = await soloud.loadMem('metronome-$generation.wav', wav);
       if (generation != _generation || !_running) {
