@@ -93,13 +93,17 @@ class _FolderCard extends ConsumerWidget {
               ),
               const Spacer(),
               if (usesCupertinoPresentation)
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () => showFolderMenu(context, ref, folder),
-                  child: const Icon(CupertinoIcons.ellipsis),
+                Tooltip(
+                  message: 'Folder actions',
+                  child: CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () => showFolderMenu(context, ref, folder),
+                    child: const Icon(CupertinoIcons.ellipsis),
+                  ),
                 )
               else
                 IconButton(
+                  tooltip: 'Folder actions',
                   icon: const Icon(Icons.more_horiz),
                   onPressed: () => showFolderMenu(context, ref, folder),
                 ),
@@ -227,8 +231,9 @@ Future<void> showFolderMenu(
                 initial: folder.name,
                 color: folder.color,
               );
-              if (r != null)
+              if (r != null) {
                 await db.updateFolder(folder.id, name: r.$1, color: r.$2);
+              }
             },
           ),
           ListTile(

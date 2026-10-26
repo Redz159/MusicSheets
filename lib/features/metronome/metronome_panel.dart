@@ -89,8 +89,9 @@ class _PulseBuilderState extends State<_PulseBuilder>
 
   void _tick(Duration _) {
     final p = widget.metronome.pulse();
-    if (p?.beat != _pulse?.beat || p?.sub != _pulse?.sub)
+    if (p?.beat != _pulse?.beat || p?.sub != _pulse?.sub) {
       setState(() => _pulse = p);
+    }
   }
 
   @override
@@ -299,10 +300,13 @@ class MetronomePanel extends StatelessWidget {
                     ),
                   ),
                   if (usesCupertinoPresentation)
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      onPressed: onClose,
-                      child: const Icon(CupertinoIcons.xmark),
+                    Tooltip(
+                      message: 'Close',
+                      child: CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: onClose,
+                        child: const Icon(CupertinoIcons.xmark),
+                      ),
                     )
                   else
                     IconButton(
@@ -750,10 +754,13 @@ class MetronomePill extends StatelessWidget {
             ),
             const SizedBox(width: 2),
             if (usesCupertinoPresentation)
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: metronome.stop,
-                child: const Icon(CupertinoIcons.stop_fill),
+              Tooltip(
+                message: 'Stop metronome',
+                child: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: metronome.stop,
+                  child: const Icon(CupertinoIcons.stop_fill),
+                ),
               )
             else
               IconButton(

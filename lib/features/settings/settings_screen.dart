@@ -40,310 +40,333 @@ class SettingsScreen extends ConsumerWidget {
                 bottom: 32,
               ),
               children: [
-              PlatformSettingsSection(
-                title: 'Appearance',
-                children: [
-                  if (defaultTargetPlatform == TargetPlatform.iOS)
-                    PlatformListTile(
-                      title: const Text('Theme'),
-                      trailing: Builder(
-                        builder: (context) {
-                          final labelStyle = TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            decoration: TextDecoration.none,
-                          );
-                          return CupertinoSlidingSegmentedControl<ThemeMode>(
-                            groupValue: s.themeMode,
-                            children: {
-                              ThemeMode.system: Text('Auto', style: labelStyle),
-                              ThemeMode.light: Text('Light', style: labelStyle),
-                              ThemeMode.dark: Text('Dark', style: labelStyle),
-                            },
-                            onValueChanged: (v) =>
-                                n.set((x) => x.copyWith(themeMode: v)),
-                          );
-                        },
-                      ),
-                    )
-                  else
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 8,
-                      ),
-                      child: SegmentedButton<ThemeMode>(
-                        segments: const [
-                          ButtonSegment(
-                            value: ThemeMode.system,
-                            icon: Icon(Icons.brightness_auto),
-                            label: Text('System'),
-                          ),
-                          ButtonSegment(
-                            value: ThemeMode.light,
-                            icon: Icon(Icons.light_mode),
-                            label: Text('Light'),
-                          ),
-                          ButtonSegment(
-                            value: ThemeMode.dark,
-                            icon: Icon(Icons.dark_mode),
-                            label: Text('Dark'),
-                          ),
-                        ],
-                        selected: {s.themeMode},
-                        onSelectionChanged: (v) =>
-                            n.set((x) => x.copyWith(themeMode: v.first)),
-                      ),
-                    ),
-                ],
-              ),
-              PlatformSettingsSection(
-                title: 'Reading',
-                children: [
-                  PlatformSwitchTile(
-                    title: const Text('Two pages side by side in landscape'),
-                    subtitle: const Text('On tablets'),
-                    value: s.twoPageLandscape,
-                    onChanged: (v) =>
-                        n.set((x) => x.copyWith(twoPageLandscape: v)),
-                  ),
-                  PlatformSwitchTile(
-                    title: const Text('Half-page turns'),
-                    subtitle: const Text(
-                      'First show the top half of the next page, so you can read ahead',
-                    ),
-                    value: s.halfPageTurn,
-                    onChanged: (v) => n.set((x) => x.copyWith(halfPageTurn: v)),
-                  ),
-                  PlatformListTile(
-                    title: const Text('Page colour'),
-                    trailing: defaultTargetPlatform == TargetPlatform.iOS
-                        ? Builder(
-                            builder: (context) {
-                              final labelStyle = TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                decoration: TextDecoration.none,
-                              );
-                              return CupertinoSlidingSegmentedControl<PageTint>(
-                                groupValue: s.pageTint,
-                                children: {
-                                  for (final p in PageTint.values)
-                                    p: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                      child: Text(p.label, style: labelStyle),
-                                    ),
-                                },
-                                onValueChanged: (v) =>
-                                    n.set((x) => x.copyWith(pageTint: v)),
-                              );
-                            },
-                          )
-                        : SegmentedButton<PageTint>(
-                            showSelectedIcon: false,
-                            segments: [
-                              for (final p in PageTint.values)
-                                ButtonSegment(value: p, label: Text(p.label)),
-                            ],
-                            selected: {s.pageTint},
-                            onSelectionChanged: (v) =>
-                                n.set((x) => x.copyWith(pageTint: v.first)),
-                          ),
-                  ),
-                  PlatformSliderTile(
-                    title: const Text('Page-turn tap zone'),
-                    value: s.tapZoneFraction,
-                    min: 0.15,
-                    max: 0.45,
-                    divisions: 6,
-                    label: '${(s.tapZoneFraction * 100).round()} %',
-                    onChanged: (v) =>
-                        n.set((x) => x.copyWith(tapZoneFraction: v)),
-                  ),
-                  PlatformSwitchTile(
-                    title: const Text('Keep screen on while reading'),
-                    value: s.keepScreenOn,
-                    onChanged: (v) => n.set((x) => x.copyWith(keepScreenOn: v)),
-                  ),
-                ],
-              ),
-              PlatformSettingsSection(
-                title: 'Page-turn pedal',
-                children: [
-                  const PlatformListTile(
-                    leading: Icon(CupertinoIcons.bluetooth),
-                    title: Text('Bluetooth pedals work automatically'),
-                    subtitle: Text(
-                      'Pair the pedal in system settings. Arrow keys, Page Up/Down and Space turn pages.',
-                    ),
-                  ),
-                  PlatformSwitchTile(
-                    title: const Text('Swap pedal direction'),
-                    value: s.swapPedal,
-                    onChanged: (v) => n.set((x) => x.copyWith(swapPedal: v)),
-                  ),
-                ],
-              ),
-              PlatformSettingsSection(
-                title: 'Annotations',
-                children: [
-                  PlatformSwitchTile(
-                    title: const Text('Draw with stylus only'),
-                    subtitle: const Text(
-                      'Fingers keep turning pages while annotating (palm rejection)',
-                    ),
-                    value: s.stylusOnly,
-                    onChanged: (v) => n.set((x) => x.copyWith(stylusOnly: v)),
-                  ),
-                ],
-              ),
-              PlatformSettingsSection(
-                title: 'Tags',
-                children: [
-                  if (tags.isEmpty)
-                    const PlatformListTile(
-                      title: Text('No tags yet'),
-                      subtitle: Text('Add tags when editing a song.'),
-                    )
-                  else if (usesCupertinoPresentation)
-                    for (final tag in tags)
+                PlatformSettingsSection(
+                  title: 'Appearance',
+                  children: [
+                    if (defaultTargetPlatform == TargetPlatform.iOS)
                       PlatformListTile(
-                        leading: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: Color(tag.color),
-                            shape: BoxShape.circle,
-                          ),
+                        title: const Text('Theme'),
+                        trailing: Builder(
+                          builder: (context) {
+                            final labelStyle = TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              decoration: TextDecoration.none,
+                            );
+                            return CupertinoSlidingSegmentedControl<ThemeMode>(
+                              groupValue: s.themeMode,
+                              children: {
+                                ThemeMode.system: Text(
+                                  'Auto',
+                                  style: labelStyle,
+                                ),
+                                ThemeMode.light: Text(
+                                  'Light',
+                                  style: labelStyle,
+                                ),
+                                ThemeMode.dark: Text('Dark', style: labelStyle),
+                              },
+                              onValueChanged: (v) =>
+                                  n.set((x) => x.copyWith(themeMode: v)),
+                            );
+                          },
                         ),
-                        title: Text(tag.name),
-                        trailing: CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () => _deleteTag(context, ref, tag),
-                          child: const Icon(
-                            CupertinoIcons.delete,
-                            color: CupertinoColors.destructiveRed,
-                          ),
-                        ),
-                        onTap: () => _editTag(context, ref, tag),
                       )
-                  else
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final tag in tags)
-                            InputChip(
-                              avatar: CircleAvatar(
-                                backgroundColor: Color(tag.color),
-                                radius: 6,
-                              ),
-                              label: Text(tag.name),
-                              onPressed: () => _editTag(context, ref, tag),
-                              onDeleted: () => _deleteTag(context, ref, tag),
+                    else
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
+                        child: SegmentedButton<ThemeMode>(
+                          segments: const [
+                            ButtonSegment(
+                              value: ThemeMode.system,
+                              icon: Icon(Icons.brightness_auto),
+                              label: Text('System'),
                             ),
-                        ],
+                            ButtonSegment(
+                              value: ThemeMode.light,
+                              icon: Icon(Icons.light_mode),
+                              label: Text('Light'),
+                            ),
+                            ButtonSegment(
+                              value: ThemeMode.dark,
+                              icon: Icon(Icons.dark_mode),
+                              label: Text('Dark'),
+                            ),
+                          ],
+                          selected: {s.themeMode},
+                          onSelectionChanged: (v) =>
+                              n.set((x) => x.copyWith(themeMode: v.first)),
+                        ),
+                      ),
+                  ],
+                ),
+                PlatformSettingsSection(
+                  title: 'Reading',
+                  children: [
+                    PlatformSwitchTile(
+                      title: const Text('Two pages side by side in landscape'),
+                      subtitle: const Text('On tablets'),
+                      value: s.twoPageLandscape,
+                      onChanged: (v) =>
+                          n.set((x) => x.copyWith(twoPageLandscape: v)),
+                    ),
+                    PlatformSwitchTile(
+                      title: const Text('Half-page turns'),
+                      subtitle: const Text(
+                        'First show the top half of the next page, so you can read ahead',
+                      ),
+                      value: s.halfPageTurn,
+                      onChanged: (v) =>
+                          n.set((x) => x.copyWith(halfPageTurn: v)),
+                    ),
+                    PlatformListTile(
+                      title: const Text('Page colour'),
+                      trailing: defaultTargetPlatform == TargetPlatform.iOS
+                          ? Builder(
+                              builder: (context) {
+                                final labelStyle = TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface,
+                                  decoration: TextDecoration.none,
+                                );
+                                return CupertinoSlidingSegmentedControl<
+                                  PageTint
+                                >(
+                                  groupValue: s.pageTint,
+                                  children: {
+                                    for (final p in PageTint.values)
+                                      p: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                        ),
+                                        child: Text(p.label, style: labelStyle),
+                                      ),
+                                  },
+                                  onValueChanged: (v) =>
+                                      n.set((x) => x.copyWith(pageTint: v)),
+                                );
+                              },
+                            )
+                          : SegmentedButton<PageTint>(
+                              showSelectedIcon: false,
+                              segments: [
+                                for (final p in PageTint.values)
+                                  ButtonSegment(value: p, label: Text(p.label)),
+                              ],
+                              selected: {s.pageTint},
+                              onSelectionChanged: (v) =>
+                                  n.set((x) => x.copyWith(pageTint: v.first)),
+                            ),
+                    ),
+                    PlatformSliderTile(
+                      title: const Text('Page-turn tap zone'),
+                      value: s.tapZoneFraction,
+                      min: 0.15,
+                      max: 0.45,
+                      divisions: 6,
+                      label: '${(s.tapZoneFraction * 100).round()} %',
+                      onChanged: (v) =>
+                          n.set((x) => x.copyWith(tapZoneFraction: v)),
+                    ),
+                    PlatformSwitchTile(
+                      title: const Text('Keep screen on while reading'),
+                      value: s.keepScreenOn,
+                      onChanged: (v) =>
+                          n.set((x) => x.copyWith(keepScreenOn: v)),
+                    ),
+                  ],
+                ),
+                PlatformSettingsSection(
+                  title: 'Page-turn pedal',
+                  children: [
+                    PlatformListTile(
+                      leading: Icon(
+                        usesCupertinoPresentation
+                            ? CupertinoIcons.bluetooth
+                            : Icons.bluetooth,
+                      ),
+                      title: Text('Bluetooth pedals work automatically'),
+                      subtitle: Text(
+                        'Pair the pedal in system settings. Arrow keys, Page Up/Down and Space turn pages.',
                       ),
                     ),
-                ],
-              ),
-              PlatformSettingsSection(
-                title: 'Song metadata',
-                footer: const Text(
-                  'Data from MusicBrainz and the Cover Art Archive. Key and tempo from AcousticBrainz and Deezer.',
+                    PlatformSwitchTile(
+                      title: const Text('Swap pedal direction'),
+                      value: s.swapPedal,
+                      onChanged: (v) => n.set((x) => x.copyWith(swapPedal: v)),
+                    ),
+                  ],
                 ),
-                children: [
-                  PlatformSwitchTile(
-                    title: const Text('Fetch song metadata online'),
-                    subtitle: const Text(
-                      'Looks up composer, key, tempo, artist, year, genre, album and cover art. Song titles are sent to '
-                      'MusicBrainz, AcousticBrainz and Deezer, also for your existing library.',
+                PlatformSettingsSection(
+                  title: 'Annotations',
+                  children: [
+                    PlatformSwitchTile(
+                      title: const Text('Draw with stylus only'),
+                      subtitle: const Text(
+                        'Fingers keep turning pages while annotating (palm rejection)',
+                      ),
+                      value: s.stylusOnly,
+                      onChanged: (v) => n.set((x) => x.copyWith(stylusOnly: v)),
                     ),
-                    value: s.fetchMetadata,
-                    onChanged: (v) => v
-                        ? enableMetadataLookup(context, ref)
-                        : n.set((x) => x.copyWith(fetchMetadata: false)),
-                  ),
-                  PlatformSwitchTile(
-                    title: const Text('Wi-Fi only'),
-                    subtitle: const Text(
-                      'Wait for Wi-Fi so mobile data is not used',
+                  ],
+                ),
+                PlatformSettingsSection(
+                  title: 'Tags',
+                  children: [
+                    if (tags.isEmpty)
+                      const PlatformListTile(
+                        title: Text('No tags yet'),
+                        subtitle: Text('Add tags when editing a song.'),
+                      )
+                    else if (usesCupertinoPresentation)
+                      for (final tag in tags)
+                        PlatformListTile(
+                          leading: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: Color(tag.color),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          title: Text(tag.name),
+                          trailing: CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: () => _deleteTag(context, ref, tag),
+                            child: const Icon(
+                              CupertinoIcons.delete,
+                              color: CupertinoColors.destructiveRed,
+                            ),
+                          ),
+                          onTap: () => _editTag(context, ref, tag),
+                        )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final tag in tags)
+                              InputChip(
+                                avatar: CircleAvatar(
+                                  backgroundColor: Color(tag.color),
+                                  radius: 6,
+                                ),
+                                label: Text(tag.name),
+                                onPressed: () => _editTag(context, ref, tag),
+                                onDeleted: () => _deleteTag(context, ref, tag),
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                PlatformSettingsSection(
+                  title: 'Song metadata',
+                  footer: usesCupertinoPresentation
+                      ? const Text(
+                          'Data from MusicBrainz and the Cover Art Archive. Key and tempo from AcousticBrainz and Deezer. '
+                          'Song titles are sent to MusicBrainz, AcousticBrainz and Deezer, also for your existing library.',
+                        )
+                      : const Text(
+                          'Data from MusicBrainz and the Cover Art Archive. Key and tempo from AcousticBrainz and Deezer.',
+                        ),
+                  children: [
+                    PlatformSwitchTile(
+                      title: const Text('Fetch song metadata online'),
+                      subtitle: usesCupertinoPresentation
+                          ? null
+                          : const Text(
+                              'Looks up composer, key, tempo, artist, year, genre, album and cover art. Song titles are sent to '
+                              'MusicBrainz, AcousticBrainz and Deezer, also for your existing library.',
+                            ),
+                      value: s.fetchMetadata,
+                      onChanged: (v) => v
+                          ? enableMetadataLookup(context, ref)
+                          : n.set((x) => x.copyWith(fetchMetadata: false)),
                     ),
-                    value: s.metadataWifiOnly,
-                    onChanged: s.fetchMetadata
-                        ? (v) => n.set((x) => x.copyWith(metadataWifiOnly: v))
-                        : null,
-                  ),
-                  if (s.fetchMetadata) _MetadataProgress(songs: songs),
-                ],
-              ),
-              PlatformSettingsSection(
-                title: 'Backup',
-                children: [
-                  PlatformListTile(
-                    leading: Icon(
-                      usesCupertinoPresentation
-                          ? CupertinoIcons.cloud_upload
-                          : Icons.backup_outlined,
+                    PlatformSwitchTile(
+                      title: const Text('Wi-Fi only'),
+                      subtitle: const Text(
+                        'Wait for Wi-Fi so mobile data is not used',
+                      ),
+                      value: s.metadataWifiOnly,
+                      onChanged: s.fetchMetadata
+                          ? (v) => n.set((x) => x.copyWith(metadataWifiOnly: v))
+                          : null,
                     ),
-                    title: const Text('Create backup'),
-                    subtitle: const Text(
-                      'All PDFs, annotations, folders, tags and setlists in one .zip file',
+                    if (s.fetchMetadata) _MetadataProgress(songs: songs),
+                  ],
+                ),
+                PlatformSettingsSection(
+                  title: 'Backup',
+                  children: [
+                    PlatformListTile(
+                      leading: Icon(
+                        usesCupertinoPresentation
+                            ? CupertinoIcons.cloud_upload
+                            : Icons.backup_outlined,
+                      ),
+                      title: const Text('Create backup'),
+                      subtitle: const Text(
+                        'All PDFs, annotations, folders, tags and setlists in one .zip file',
+                      ),
+                      onTap: () => _backup(context, ref),
                     ),
-                    onTap: () => _backup(context, ref),
-                  ),
-                  PlatformListTile(
-                    leading: Icon(
-                      usesCupertinoPresentation
-                          ? CupertinoIcons.refresh
-                          : Icons.restore,
+                    PlatformListTile(
+                      leading: Icon(
+                        usesCupertinoPresentation
+                            ? CupertinoIcons.refresh
+                            : Icons.restore,
+                      ),
+                      title: const Text('Restore backup'),
+                      subtitle: const Text('Replaces the current library'),
+                      onTap: () => _restore(context, ref),
                     ),
-                    title: const Text('Restore backup'),
-                    subtitle: const Text('Replaces the current library'),
-                    onTap: () => _restore(context, ref),
-                  ),
-                ],
-              ),
-              PlatformSettingsSection(
-                title: 'Library',
-                children: [
-                  PlatformListTile(
-                    leading: Icon(
-                      usesCupertinoPresentation
-                          ? CupertinoIcons.music_note_list
-                          : Icons.library_music_outlined,
+                  ],
+                ),
+                PlatformSettingsSection(
+                  title: 'Library',
+                  children: [
+                    PlatformListTile(
+                      leading: Icon(
+                        usesCupertinoPresentation
+                            ? CupertinoIcons.music_note_list
+                            : Icons.library_music_outlined,
+                      ),
+                      title: Text('${songs.length} songs · $pages pages'),
+                      subtitle: Text(
+                        'Stored on this device',
+                        style: t.textTheme.bodySmall,
+                      ),
                     ),
-                    title: Text('${songs.length} songs · $pages pages'),
-                    subtitle: Text(
-                      'Stored on this device',
-                      style: t.textTheme.bodySmall,
+                  ],
+                ),
+                PlatformSettingsSection(
+                  title: 'About',
+                  children: [
+                    PlatformListTile(
+                      leading: Icon(
+                        usesCupertinoPresentation
+                            ? CupertinoIcons.doc_text
+                            : Icons.description_outlined,
+                      ),
+                      title: const Text('Open-source licenses'),
+                      subtitle: const Text(
+                        'MusicSheets is MIT-licensed. PDF export uses Syncfusion under its Community License.',
+                      ),
+                      onTap: () => _showLicenses(context),
                     ),
-                  ),
-                ],
-              ),
-              PlatformSettingsSection(
-                title: 'About',
-                children: [
-                  PlatformListTile(
-                    leading: Icon(
-                      usesCupertinoPresentation
-                          ? CupertinoIcons.doc_text
-                          : Icons.description_outlined,
-                    ),
-                    title: const Text('Open-source licenses'),
-                    subtitle: const Text(
-                      'MusicSheets is MIT-licensed. PDF export uses Syncfusion under its Community License.',
-                    ),
-                    onTap: () => _showLicenses(context),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -487,43 +510,56 @@ class _IosLicensesPageState extends State<_IosLicensesPage> {
             if (!snapshot.hasData) {
               return const Center(child: CupertinoActivityIndicator());
             }
-            return ListView(
-              children: [
-                CupertinoListSection.insetGrouped(
-                  header: const Text('MUSICSHEETS'),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        'Third-party software used by MusicSheets is listed below.',
-                        style: CupertinoTheme.of(context).textTheme.textStyle,
-                      ),
-                    ),
-                  ],
-                ),
-                for (final entry in snapshot.data!)
-                  CupertinoListSection.insetGrouped(
-                    header: Text(entry.packages.join(', ')),
+            final byPackage = <String, List<LicenseParagraph>>{};
+            for (final license in snapshot.data!) {
+              for (final package in license.packages) {
+                byPackage
+                    .putIfAbsent(package, () => [])
+                    .addAll(license.paragraphs);
+              }
+            }
+            final packages = byPackage.entries.toList()
+              ..sort((a, b) => a.key.compareTo(b.key));
+            return ListView.builder(
+              itemCount: packages.length + 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return CupertinoListSection.insetGrouped(
+                    header: const Text('MUSICSHEETS'),
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(16),
-                        child: SelectableText(
-                          entry.paragraphs
-                              .map((paragraph) {
-                                final indent = List.filled(
-                                  paragraph.indent * 2,
-                                  ' ',
-                                ).join();
-                                return '$indent${paragraph.text}';
-                              })
-                              .join('\n\n'),
-                          style: CupertinoTheme.of(context).textTheme.textStyle
-                              .copyWith(fontSize: 13),
+                        child: Text(
+                          'Third-party software used by MusicSheets is listed below.',
+                          style: CupertinoTheme.of(context).textTheme.textStyle,
                         ),
                       ),
                     ],
-                  ),
-              ],
+                  );
+                }
+                final entry = packages[index - 1];
+                final text = entry.value
+                    .map((paragraph) {
+                      final indent = paragraph.indent > 0
+                          ? paragraph.indent * 2
+                          : 0;
+                      return '${List.filled(indent, ' ').join()}${paragraph.text}';
+                    })
+                    .join('\n\n');
+                return CupertinoListSection.insetGrouped(
+                  header: Text(entry.key),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SelectableText(
+                        text,
+                        style: CupertinoTheme.of(context).textTheme.textStyle
+                            .copyWith(fontSize: 13),
+                      ),
+                    ),
+                  ],
+                );
+              },
             );
           },
         ),

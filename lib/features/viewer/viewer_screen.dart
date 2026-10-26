@@ -378,16 +378,18 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       _next();
     } else {
       setState(() => _chrome = !_chrome);
-      if (_chrome)
+      if (_chrome) {
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _scrollScrubberToCurrent(),
         );
+      }
     }
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent e) {
-    if (e is! KeyDownEvent && e is! KeyRepeatEvent)
+    if (e is! KeyDownEvent && e is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
+    }
     final swap = ref.read(settingsProvider).swapPedal;
     final k = e.logicalKey;
     final forward = {
@@ -456,10 +458,12 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     _half = false;
     final old = _pc;
     _pc = PageController(initialPage: _unit);
-    if (old != null)
+    if (old != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
-    if (_currentSong == null)
+    }
+    if (_currentSong == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _afterUnitChange());
+    }
   }
 
   @override
@@ -578,11 +582,12 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                           current.id,
                           SongsCompanion(tempo: Value(bpm)),
                         );
-                        if (context.mounted)
+                        if (context.mounted) {
                           showSnack(
                             context,
                             'Saved $bpm BPM to “${current.title}”',
                           );
+                        }
                       },
                       onClose: () => setState(() => _metronomeOpen = false),
                     ),
@@ -822,8 +827,9 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       page: ref0.page,
       zoom: zoom,
     );
-    if (filter != null)
+    if (filter != null) {
       image = ColorFiltered(colorFilter: filter, child: image);
+    }
     return Align(
       alignment: alignment,
       child: AspectRatio(
@@ -898,8 +904,9 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       final songIndex = _songs!.indexWhere((s) => s.id == c.songId);
       if (songIndex >= 0) {
         final flat = _offsets[songIndex] + a.page;
-        if (flat < _flat.length && !_units[_unit].contains(flat))
+        if (flat < _flat.length && !_units[_unit].contains(flat)) {
           _goToFlat(flat);
+        }
       }
     }
     try {
@@ -1070,36 +1077,39 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                 ),
               )
             : Material(
-          elevation: 6,
-          shadowColor: Colors.black54,
-          color: scheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(28),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 6, 6, 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.highlight_alt, color: scheme.primary),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: Text(
-                    sel == null
-                        ? 'Drag over the part for “${_marking!.title}”'
-                        : 'Drag the edges or corners to adjust “${_marking!.title}”',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                elevation: 6,
+                shadowColor: Colors.black54,
+                color: scheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(28),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 6, 6, 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.highlight_alt, color: scheme.primary),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          sel == null
+                              ? 'Drag over the part for “${_marking!.title}”'
+                              : 'Drag the edges or corners to adjust “${_marking!.title}”',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: _endMarking,
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: valid ? _saveMarking : null,
+                        child: const Text('Save'),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                TextButton(onPressed: _endMarking, child: const Text('Cancel')),
-                FilledButton(
-                  onPressed: valid ? _saveMarking : null,
-                  child: const Text('Save'),
-                ),
-              ],
-            ),
-          ),
-        ),
+              ),
       ),
     );
   }
@@ -1121,14 +1131,15 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       bool selected = false,
     }) {
       if (usesCupertinoPresentation) {
-        return CupertinoButton(
-          padding: const EdgeInsets.symmetric(horizontal: 7),
-          onPressed: onPressed,
-          child: Icon(
-            cupertinoIcon,
-            color: selected
-                ? CupertinoTheme.of(context).primaryColor
-                : null,
+        return Tooltip(
+          message: tooltip,
+          child: CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 7),
+            onPressed: onPressed,
+            child: Icon(
+              cupertinoIcon,
+              color: selected ? CupertinoTheme.of(context).primaryColor : null,
+            ),
           ),
         );
       }
@@ -1195,16 +1206,19 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
               () => _setAnnotating(true),
             ),
             if (usesCupertinoPresentation)
-              CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 7),
-                onPressed: () => setState(() {
-                  _metronomeOpen = !_metronomeOpen;
-                  _audioOpen = false;
-                }),
-                child: MetronomeIcon(
-                  color: _metronomeOpen
-                      ? CupertinoTheme.of(context).primaryColor
-                      : null,
+              Tooltip(
+                message: 'Metronome',
+                child: CupertinoButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 7),
+                  onPressed: () => setState(() {
+                    _metronomeOpen = !_metronomeOpen;
+                    _audioOpen = false;
+                  }),
+                  child: MetronomeIcon(
+                    color: _metronomeOpen
+                        ? CupertinoTheme.of(context).primaryColor
+                        : null,
+                  ),
                 ),
               )
             else
@@ -1225,12 +1239,12 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                 switch (v) {
                   case 'two':
                     notifier.set(
-                      (s) => s.copyWith(
-                        twoPageLandscape: !s.twoPageLandscape,
-                      ),
+                      (s) => s.copyWith(twoPageLandscape: !s.twoPageLandscape),
                     );
                   case 'half':
-                    notifier.set((s) => s.copyWith(halfPageTurn: !s.halfPageTurn));
+                    notifier.set(
+                      (s) => s.copyWith(halfPageTurn: !s.halfPageTurn),
+                    );
                     setState(() => _half = false);
                   default:
                     notifier.set(
@@ -1264,12 +1278,7 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
               () async {
                 await _store.flush();
                 if (mounted) {
-                  await exportSongs(
-                    context,
-                    ref,
-                    [current],
-                    current.title,
-                  );
+                  await exportSongs(context, ref, [current], current.title);
                 }
               },
             ),
@@ -1312,9 +1321,8 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
               child: toolbar,
             )
           : Material(
-              color: Theme.of(context).colorScheme.surface.withValues(
-                alpha: 0.96,
-              ),
+              color: Theme.of(context).colorScheme.surface
+                  .withValues(alpha: 0.96),
               elevation: 3,
               child: toolbar,
             ),
@@ -1355,23 +1363,22 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
               ),
             )
           : Material(
-              color: Theme.of(context).colorScheme.surface.withValues(
-                alpha: 0.96,
-              ),
+              color: Theme.of(context).colorScheme.surface
+                  .withValues(alpha: 0.96),
               elevation: 3,
               child: Padding(
-          padding: EdgeInsets.only(bottom: bottom, top: 8),
-          child: _ScrubberStrip(
-            controller: _scrubber,
-            count: _flat.length,
-            current: _units[_unit],
-            songStarts: _offsets.toSet(),
-            labelOf: (flat) => '${_flat[flat].page + 1}',
-            builder: (flat) => _thumb(flat),
-            onTap: _goToFlat,
-          ),
-        ),
-      ),
+                padding: EdgeInsets.only(bottom: bottom, top: 8),
+                child: _ScrubberStrip(
+                  controller: _scrubber,
+                  count: _flat.length,
+                  current: _units[_unit],
+                  songStarts: _offsets.toSet(),
+                  labelOf: (flat) => '${_flat[flat].page + 1}',
+                  builder: (flat) => _thumb(flat),
+                  onTap: _goToFlat,
+                ),
+              ),
+            ),
     );
   }
 

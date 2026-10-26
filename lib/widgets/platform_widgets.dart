@@ -48,8 +48,9 @@ class PlatformMenuButton<T> extends StatelessWidget {
         onSelected: onSelected,
         itemBuilder: (context) => [
           for (final action in actions)
-            PopupMenuItem<T>(
+            CheckedPopupMenuItem<T>(
               value: action.value,
+              checked: action.selected,
               child: Row(
                 children: [
                   if (action.icon != null) ...[
@@ -57,7 +58,6 @@ class PlatformMenuButton<T> extends StatelessWidget {
                     const SizedBox(width: 12),
                   ],
                   Expanded(child: Text(action.title)),
-                  if (action.selected) const Icon(Icons.check, size: 18),
                 ],
               ),
             ),
@@ -176,6 +176,21 @@ Widget _navigationAction(Widget action, {Color? foregroundColor}) {
   return action;
 }
 
+Widget? _cupertinoSubtitle(Widget? subtitle) {
+  if (subtitle == null) return null;
+  return Builder(
+    builder: (context) {
+      final style = DefaultTextStyle.of(context);
+      return DefaultTextStyle(
+        style: style.style,
+        maxLines: null,
+        overflow: TextOverflow.visible,
+        child: subtitle,
+      );
+    },
+  );
+}
+
 class PlatformScaffold extends StatelessWidget {
   const PlatformScaffold({
     super.key,
@@ -243,6 +258,16 @@ class PlatformScaffold extends StatelessWidget {
           ),
       ],
     );
+    Widget cupertinoBody() {
+      final bottom = materialBar?.bottom;
+      if (bottom == null) return bodyWithOverlay();
+      return Column(
+        children: [
+          SizedBox(height: bottom.preferredSize.height, child: bottom),
+          Expanded(child: bodyWithOverlay()),
+        ],
+      );
+    }
 
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground,
@@ -262,7 +287,7 @@ class PlatformScaffold extends StatelessWidget {
                     ),
             ),
       child: largeTitle == null
-          ? bodyWithOverlay()
+          ? cupertinoBody()
           : NestedScrollView(
               headerSliverBuilder: (context, innerBoxIsScrolled) => [
                 CupertinoSliverNavigationBar(
@@ -284,7 +309,7 @@ class PlatformScaffold extends StatelessWidget {
                         ),
                 ),
               ],
-              body: bodyWithOverlay(),
+              body: cupertinoBody(),
             ),
     );
   }
@@ -309,7 +334,7 @@ class PlatformSwitchTile extends StatelessWidget {
     if (usesCupertinoPresentation) {
       return CupertinoListTile(
         title: title,
-        subtitle: subtitle,
+        subtitle: _cupertinoSubtitle(subtitle),
         trailing: CupertinoSwitch(value: value, onChanged: onChanged),
         onTap: onChanged == null ? null : () => onChanged!(!value),
       );
@@ -345,7 +370,7 @@ class PlatformListTile extends StatelessWidget {
       return CupertinoListTile(
         leading: leading,
         title: title,
-        subtitle: subtitle,
+        subtitle: _cupertinoSubtitle(subtitle),
         trailing: trailing,
         onTap: onTap,
       );

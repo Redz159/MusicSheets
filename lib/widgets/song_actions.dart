@@ -319,7 +319,7 @@ Future<void> showSongMenu(
   BuildContext context,
   WidgetRef ref,
   Song song, {
-  List<Widget> extra = const [],
+  List<Widget> Function(BuildContext sheet)? extra,
 }) {
   return showPlatformSheet<void>(
     context: context,
@@ -337,7 +337,7 @@ Future<void> showSongMenu(
             ),
           ),
           if (!usesCupertinoPresentation) const Divider(),
-          ...extra,
+          ...?extra?.call(sheet),
           PlatformListTile(
             leading: const Icon(Icons.edit_outlined),
             title: const Text('Edit details'),
@@ -735,47 +735,7 @@ class _SongPickerState extends ConsumerState<_SongPicker> {
       ),
       SongSort.title,
     );
-    final appBar = AppBar(
-      title: Text(
-        _picked.isEmpty ? widget.title : '${_picked.length} selected',
-      ),
-      actions: [
-        if (usesCupertinoPresentation)
-          CupertinoButton(
-            onPressed: _picked.isEmpty
-                ? null
-                : () => Navigator.pop(context, _picked),
-            child: const Text('Add'),
-          )
-        else
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: FilledButton(
-              onPressed: _picked.isEmpty
-                  ? null
-                  : () => Navigator.pop(context, _picked),
-              child: const Text('Add'),
-            ),
-          ),
-      ],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-          child: usesCupertinoPresentation
-              ? CupertinoSearchTextField(
-                  placeholder: 'Search songs',
-                  onChanged: (v) => setState(() => _query = v),
-                )
-              : SearchBar(
-                  hintText: 'Search songs',
-                  leading: const Icon(Icons.search),
-                  elevation: const WidgetStatePropertyAll(0),
-                  onChanged: (v) => setState(() => _query = v),
-                ),
-        ),
-      ),
-    );
+    final title = _picked.isEmpty ? widget.title : '${_picked.length} selected';
     final body = SongList(
       songs: visible,
       sort: SongSort.title,
@@ -789,7 +749,7 @@ class _SongPickerState extends ConsumerState<_SongPicker> {
       return CupertinoPageScaffold(
         backgroundColor: CupertinoColors.systemGroupedBackground,
         navigationBar: CupertinoNavigationBar(
-          middle: appBar.title,
+          middle: Text(title),
           trailing: CupertinoButton(
             padding: EdgeInsets.zero,
             onPressed: _picked.isEmpty
@@ -814,6 +774,34 @@ class _SongPickerState extends ConsumerState<_SongPicker> {
         ),
       );
     }
-    return Scaffold(appBar: appBar, body: body);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: FilledButton(
+              onPressed: _picked.isEmpty
+                  ? null
+                  : () => Navigator.pop(context, _picked),
+              child: const Text('Add'),
+            ),
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(64),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: SearchBar(
+              hintText: 'Search songs',
+              leading: const Icon(Icons.search),
+              elevation: const WidgetStatePropertyAll(0),
+              onChanged: (v) => setState(() => _query = v),
+            ),
+          ),
+        ),
+      ),
+      body: body,
+    );
   }
 }

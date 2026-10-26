@@ -5,7 +5,9 @@ import 'package:super_sliver_list/super_sliver_list.dart';
 import '../core/sorting.dart';
 import '../data/db.dart';
 import 'metadata_widgets.dart';
+import 'platform_widgets.dart';
 
+const _headerColor = Color(0xFF575757);
 const _railWidth = 44.0;
 
 /// Song list with themed section headers and a letter rail for indexed sorts.
@@ -124,15 +126,17 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cupertino = usesCupertinoPresentation;
     return Container(
       height: 30,
-      color: theme.colorScheme.surfaceContainerHigh,
+      color: cupertino ? theme.colorScheme.surfaceContainerHigh : _headerColor,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       alignment: Alignment.centerLeft,
       child: Text(
         letter,
         style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.onSurface,
+          color: cupertino ? theme.colorScheme.onSurface : Colors.white,
+          fontSize: cupertino ? null : 17,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.5,
         ),
@@ -317,6 +321,7 @@ class _LetterRailState extends State<LetterRail> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final cupertino = usesCupertinoPresentation;
     return LayoutBuilder(
       builder: (context, c) {
         final cell = (c.maxHeight / widget.letters.length).clamp(18.0, 52.0);
@@ -327,7 +332,9 @@ class _LetterRailState extends State<LetterRail> {
             clipBehavior: Clip.none,
             children: [
               Positioned.fill(
-                child: ColoredBox(color: scheme.surfaceContainerLow),
+                child: ColoredBox(
+                  color: cupertino ? scheme.surfaceContainerLow : Colors.black,
+                ),
               ),
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -346,16 +353,27 @@ class _LetterRailState extends State<LetterRail> {
                           height: cell,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: l == _active
+                            color: l != _active
+                                ? null
+                                : cupertino
                                 ? scheme.secondaryContainer
-                                : null,
+                                : Colors.white24,
+                            border: cupertino
+                                ? null
+                                : const Border(
+                                    bottom: BorderSide(
+                                      color: Color(0xFF3A3A3A),
+                                    ),
+                                  ),
                           ),
                           child: Text(
                             l,
                             style: TextStyle(
-                              color: l == _active
-                                  ? scheme.onSecondaryContainer
-                                  : scheme.onSurfaceVariant,
+                              color: cupertino
+                                  ? l == _active
+                                        ? scheme.onSecondaryContainer
+                                        : scheme.onSurfaceVariant
+                                  : Colors.white,
                               fontSize: fontSize,
                               decoration: TextDecoration.none,
                             ),

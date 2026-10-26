@@ -33,8 +33,9 @@ class _FolderScreenState extends ConsumerState<FolderScreen> {
       title: 'Add to folder',
       exclude: {for (final s in current) s.id},
     );
-    if (ids != null)
+    if (ids != null) {
       await ref.read(databaseProvider).addSongsToFolder(widget.folderId, ids);
+    }
   }
 
   @override
@@ -177,17 +178,18 @@ class _FolderScreenState extends ConsumerState<FolderScreen> {
                 trailingBuilder: selecting
                     ? null
                     : (s) => IconButton(
+                        tooltip: 'Song actions',
                         icon: const Icon(Icons.more_vert),
                         onPressed: () => showSongMenu(
                           context,
                           ref,
                           s,
-                          extra: [
+                          extra: (sheet) => [
                             PlatformListTile(
                               leading: const Icon(Icons.folder_off_outlined),
                               title: const Text('Remove from this folder'),
                               onTap: () {
-                                Navigator.pop(context);
+                                Navigator.pop(sheet);
                                 db.removeSongsFromFolder(folder.id, [s.id]);
                               },
                             ),

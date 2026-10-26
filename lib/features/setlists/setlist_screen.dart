@@ -48,8 +48,9 @@ class _SetlistScreenState extends ConsumerState<SetlistScreen> {
 
   Future<void> _add() async {
     final ids = await pickSongs(context, title: 'Add to setlist');
-    if (ids != null && ids.isNotEmpty)
+    if (ids != null && ids.isNotEmpty) {
       await ref.read(databaseProvider).addSongsToSetlist(widget.setlistId, ids);
+    }
   }
 
   void _play(List<SetlistEntry> entries, Setlist setlist, int index) {
@@ -259,17 +260,16 @@ class _SetlistScreenState extends ConsumerState<SetlistScreen> {
                                     height: 32,
                                     alignment: Alignment.center,
                                     decoration: BoxDecoration(
-                                      color: CupertinoTheme.of(
-                                        context,
-                                      ).primaryColor.withValues(alpha: 0.12),
+                                      color: CupertinoTheme.of(context)
+                                          .primaryColor
+                                          .withValues(alpha: 0.12),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Text(
                                       '${i + 1}',
                                       style: TextStyle(
-                                        color: CupertinoTheme.of(
-                                          context,
-                                        ).primaryColor,
+                                        color: CupertinoTheme.of(context)
+                                            .primaryColor,
                                         fontSize: 13,
                                       ),
                                     ),
@@ -291,37 +291,38 @@ class _SetlistScreenState extends ConsumerState<SetlistScreen> {
                                 ),
                               )
                             : ListTile(
-                          contentPadding: const EdgeInsets.only(
-                            left: 12,
-                            right: 8,
-                          ),
-                          leading: CircleAvatar(
-                            radius: 16,
-                            backgroundColor: t.colorScheme.primaryContainer,
-                            child: Text(
-                              '${i + 1}',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: t.colorScheme.onPrimaryContainer,
+                                contentPadding: const EdgeInsets.only(
+                                  left: 12,
+                                  right: 8,
+                                ),
+                                leading: CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor:
+                                      t.colorScheme.primaryContainer,
+                                  child: Text(
+                                    '${i + 1}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: t.colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                ),
+                                title: Text(
+                                  e.song.title,
+                                  style: const TextStyle(fontSize: 17),
+                                ),
+                                subtitle: Text(
+                                  '${e.song.composer.isEmpty ? '-' : e.song.composer} · ${e.song.pageCount} p.',
+                                ),
+                                onTap: () => _play(entries, setlist, i),
+                                trailing: ReorderableDragStartListener(
+                                  index: i,
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(12),
+                                    child: Icon(Icons.drag_handle),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          title: Text(
-                            e.song.title,
-                            style: const TextStyle(fontSize: 17),
-                          ),
-                          subtitle: Text(
-                            '${e.song.composer.isEmpty ? '-' : e.song.composer} · ${e.song.pageCount} p.',
-                          ),
-                          onTap: () => _play(entries, setlist, i),
-                          trailing: ReorderableDragStartListener(
-                            index: i,
-                            child: const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: Icon(Icons.drag_handle),
-                            ),
-                          ),
-                        ),
                       );
                     },
                   ),

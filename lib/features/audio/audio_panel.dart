@@ -48,155 +48,175 @@ class AudioPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final content = ListenableBuilder(
-        listenable: playback,
-        builder: (context, _) {
-          final current = playback.clip;
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 8, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      usesCupertinoPresentation
-                          ? CupertinoIcons.headphones
-                          : Icons.headphones_outlined,
-                      color: scheme.primary,
-                      size: 22,
+      listenable: playback,
+      builder: (context, _) {
+        final current = playback.clip;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    usesCupertinoPresentation
+                        ? CupertinoIcons.headphones
+                        : Icons.headphones_outlined,
+                    color: scheme.primary,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Recordings',
+                      style: theme.textTheme.titleMedium,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text('Recordings', style: theme.textTheme.titleMedium)),
-                    if (usesCupertinoPresentation)
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: onAdd,
-                        child: const Icon(CupertinoIcons.add),
-                      )
-                    else
-                      IconButton(
-                        tooltip: 'Add audio file',
-                        icon: const Icon(Icons.upload_file),
-                        onPressed: onAdd,
-                      ),
-                    if (usesCupertinoPresentation)
-                      CupertinoButton(
+                  ),
+                  if (usesCupertinoPresentation)
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: onAdd,
+                      child: const Icon(CupertinoIcons.add),
+                    )
+                  else
+                    IconButton(
+                      tooltip: 'Add audio file',
+                      icon: const Icon(Icons.upload_file),
+                      onPressed: onAdd,
+                    ),
+                  if (usesCupertinoPresentation)
+                    Tooltip(
+                      message: 'Close',
+                      child: CupertinoButton(
                         padding: EdgeInsets.zero,
                         onPressed: onClose,
                         child: const Icon(CupertinoIcons.xmark),
-                      )
-                    else
-                      IconButton(
-                        tooltip: 'Close',
-                        icon: const Icon(Icons.close),
-                        onPressed: onClose,
                       ),
-                  ],
-                ),
-                if (current != null) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _Player(playback: playback, clip: current),
-                  ),
-                  if (!usesCupertinoPresentation) const Divider(height: 20),
+                    )
+                  else
+                    IconButton(
+                      tooltip: 'Close',
+                      icon: const Icon(Icons.close),
+                      onPressed: onClose,
+                    ),
                 ],
-                if (clips.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
-                    child: Column(
-                      children: [
-                        Text(
-                          'No recordings for this song yet.\nAdd a file for the whole song or for a part of it.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-                        ),
-                        const SizedBox(height: 12),
-                        if (usesCupertinoPresentation)
-                          CupertinoButton.filled(
-                            onPressed: onAdd,
-                            child: const Text('Add audio file'),
-                          )
-                        else
-                          FilledButton.icon(
-                            onPressed: onAdd,
-                            icon: const Icon(Icons.upload_file),
-                            label: const Text('Add audio file'),
-                          ),
-                      ],
-                    ),
-                  )
-                else
-                  for (final c in clips)
-                    usesCupertinoPresentation
-                        ? CupertinoListTile(
-                            leading: CupertinoButton(
-                              padding: EdgeInsets.zero,
-                              onPressed: () => onPlay(c),
-                              child: Icon(
-                                current?.id == c.id && playback.playing
-                                    ? CupertinoIcons.pause_fill
-                                    : CupertinoIcons.play_fill,
-                              ),
-                            ),
-                            title: Text(
-                              c.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Text(clipSubtitle(c)),
-                            onTap: () => onPlay(c),
-                            trailing: PlatformMenuButton<String>(
-                              tooltip: 'Recording actions',
-                              icon: const Icon(Icons.more_vert),
-                              cupertinoIcon: CupertinoIcons.ellipsis,
-                              onSelected: (v) => switch (v) {
-                                'mark' => onMarkPart(c),
-                                'whole' => onWholeSong(c),
-                                'rename' => onRename(c),
-                                _ => onDelete(c),
-                              },
-                              actions: _clipActions(c),
-                            ),
-                          )
-                        : ListTile(
-                      contentPadding: const EdgeInsets.only(right: 0),
-                      leading: IconButton.filledTonal(
-                        isSelected: current?.id == c.id,
-                        icon: Icon(current?.id == c.id && playback.playing ? Icons.pause : Icons.play_arrow),
-                        onPressed: () => onPlay(c),
-                      ),
-                      title: Text(c.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                      subtitle: Row(
-                        children: [
-                          Icon(
-                            c.area == null ? Icons.queue_music : Icons.highlight_alt,
-                            size: 14,
-                            color: scheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(clipSubtitle(c)),
-                        ],
-                      ),
-                      onTap: () => onPlay(c),
-                      trailing: PlatformMenuButton<String>(
-                        tooltip: 'Recording actions',
-                        icon: const Icon(Icons.more_vert),
-                        cupertinoIcon: CupertinoIcons.ellipsis,
-                        onSelected: (v) => switch (v) {
-                          'mark' => onMarkPart(c),
-                          'whole' => onWholeSong(c),
-                          'rename' => onRename(c),
-                          _ => onDelete(c),
-                        },
-                        actions: _clipActions(c),
-                      ),
-                    ),
+              ),
+              if (current != null) ...[
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: _Player(playback: playback, clip: current),
+                ),
+                if (!usesCupertinoPresentation) const Divider(height: 20),
               ],
-            ),
-          );
-        },
-      );
+              if (clips.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+                  child: Column(
+                    children: [
+                      Text(
+                        'No recordings for this song yet.\nAdd a file for the whole song or for a part of it.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (usesCupertinoPresentation)
+                        CupertinoButton.filled(
+                          onPressed: onAdd,
+                          child: const Text('Add audio file'),
+                        )
+                      else
+                        FilledButton.icon(
+                          onPressed: onAdd,
+                          icon: const Icon(Icons.upload_file),
+                          label: const Text('Add audio file'),
+                        ),
+                    ],
+                  ),
+                )
+              else
+                for (final c in clips)
+                  usesCupertinoPresentation
+                      ? CupertinoListTile(
+                          leading: CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: () => onPlay(c),
+                            child: Icon(
+                              current?.id == c.id && playback.playing
+                                  ? CupertinoIcons.pause_fill
+                                  : CupertinoIcons.play_fill,
+                            ),
+                          ),
+                          title: Text(
+                            c.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(clipSubtitle(c)),
+                          onTap: () => onPlay(c),
+                          trailing: PlatformMenuButton<String>(
+                            tooltip: 'Recording actions',
+                            icon: const Icon(Icons.more_vert),
+                            cupertinoIcon: CupertinoIcons.ellipsis,
+                            onSelected: (v) => switch (v) {
+                              'mark' => onMarkPart(c),
+                              'whole' => onWholeSong(c),
+                              'rename' => onRename(c),
+                              _ => onDelete(c),
+                            },
+                            actions: _clipActions(c),
+                          ),
+                        )
+                      : ListTile(
+                          contentPadding: const EdgeInsets.only(right: 0),
+                          leading: IconButton.filledTonal(
+                            isSelected: current?.id == c.id,
+                            icon: Icon(
+                              current?.id == c.id && playback.playing
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
+                            ),
+                            onPressed: () => onPlay(c),
+                          ),
+                          title: Text(
+                            c.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Row(
+                            children: [
+                              Icon(
+                                c.area == null
+                                    ? Icons.queue_music
+                                    : Icons.highlight_alt,
+                                size: 14,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(clipSubtitle(c)),
+                            ],
+                          ),
+                          onTap: () => onPlay(c),
+                          trailing: PlatformMenuButton<String>(
+                            tooltip: 'Recording actions',
+                            icon: const Icon(Icons.more_vert),
+                            cupertinoIcon: CupertinoIcons.ellipsis,
+                            onSelected: (v) => switch (v) {
+                              'mark' => onMarkPart(c),
+                              'whole' => onWholeSong(c),
+                              'rename' => onRename(c),
+                              _ => onDelete(c),
+                            },
+                            actions: _clipActions(c),
+                          ),
+                        ),
+            ],
+          ),
+        );
+      },
+    );
     if (usesCupertinoPresentation) {
       return DecoratedBox(
         decoration: BoxDecoration(
@@ -272,8 +292,18 @@ class _Player extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(clip.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.titleSmall),
-        Text(clipSubtitle(clip), style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+        Text(
+          clip.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleSmall,
+        ),
+        Text(
+          clipSubtitle(clip),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
         StreamBuilder<Duration>(
           stream: playback.positionStream,
           builder: (context, snap) {
@@ -283,10 +313,16 @@ class _Player extends StatelessWidget {
             return Column(
               children: [
                 Slider.adaptive(
-                  value: total.inMilliseconds == 0 ? 0 : pos.inMilliseconds / total.inMilliseconds,
+                  value: total.inMilliseconds == 0
+                      ? 0
+                      : pos.inMilliseconds / total.inMilliseconds,
                   onChanged: total.inMilliseconds == 0
                       ? null
-                      : (v) => playback.seek(Duration(milliseconds: (v * total.inMilliseconds).round())),
+                      : (v) => playback.seek(
+                          Duration(
+                            milliseconds: (v * total.inMilliseconds).round(),
+                          ),
+                        ),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -425,47 +461,52 @@ class AudioPill extends StatelessWidget {
     final clip = playback.clip;
     if (clip == null) return const SizedBox.shrink();
     final content = Padding(
-          padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (usesCupertinoPresentation)
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: playback.toggle,
-                  child: Icon(
-                    playback.playing
-                        ? CupertinoIcons.pause_fill
-                        : CupertinoIcons.play_fill,
-                  ),
-                )
-              else
-                IconButton(
-                  tooltip: playback.playing ? 'Pause' : 'Play',
-                  icon: Icon(
-                    playback.playing ? Icons.pause : Icons.play_arrow,
-                  ),
-                  onPressed: playback.toggle,
-                ),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 200),
-                child: Text(clip.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+      padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (usesCupertinoPresentation)
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: playback.toggle,
+              child: Icon(
+                playback.playing
+                    ? CupertinoIcons.pause_fill
+                    : CupertinoIcons.play_fill,
               ),
-              if (usesCupertinoPresentation)
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: playback.stop,
-                  child: const Icon(CupertinoIcons.xmark),
-                )
-              else
-                IconButton(
-                  tooltip: 'Stop',
-                  icon: const Icon(Icons.close),
-                  onPressed: playback.stop,
-                ),
-            ],
+            )
+          else
+            IconButton(
+              tooltip: playback.playing ? 'Pause' : 'Play',
+              icon: Icon(playback.playing ? Icons.pause : Icons.play_arrow),
+              onPressed: playback.toggle,
+            ),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 200),
+            child: Text(
+              clip.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        );
+          if (usesCupertinoPresentation)
+            Tooltip(
+              message: 'Stop playback',
+              child: CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: playback.stop,
+                child: const Icon(CupertinoIcons.xmark),
+              ),
+            )
+          else
+            IconButton(
+              tooltip: 'Stop',
+              icon: const Icon(Icons.close),
+              onPressed: playback.stop,
+            ),
+        ],
+      ),
+    );
     if (usesCupertinoPresentation) {
       return GestureDetector(
         onTap: onOpen,
@@ -568,7 +609,12 @@ class _ClipArea extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final a = clip.area!;
-    final rect = Rect.fromLTRB(a.left * size.width, a.top * size.height, a.right * size.width, a.bottom * size.height);
+    final rect = Rect.fromLTRB(
+      a.left * size.width,
+      a.top * size.height,
+      a.right * size.width,
+      a.bottom * size.height,
+    );
     final color = active ? scheme.primary : scheme.tertiary;
     return Positioned.fromRect(
       rect: rect,
@@ -677,7 +723,18 @@ class _ClipArea extends StatelessWidget {
   }
 }
 
-enum _Grab { create, move, left, right, top, bottom, topLeft, topRight, bottomLeft, bottomRight }
+enum _Grab {
+  create,
+  move,
+  left,
+  right,
+  top,
+  bottom,
+  topLeft,
+  topRight,
+  bottomLeft,
+  bottomRight,
+}
 
 /// Drag over the page to mark which part a recording belongs to. An existing mark
 /// can be adjusted: drag an edge (one direction), a corner (both) or the inside
@@ -702,15 +759,19 @@ class _AreaSelectorState extends State<AreaSelector> {
   Rect? _startRect;
 
   _Grab _grabAt(Offset p, Rect r) {
-    final nearL = (p.dx - r.left).abs() < _reach, nearR = (p.dx - r.right).abs() < _reach;
-    final nearT = (p.dy - r.top).abs() < _reach, nearB = (p.dy - r.bottom).abs() < _reach;
+    final nearL = (p.dx - r.left).abs() < _reach,
+        nearR = (p.dx - r.right).abs() < _reach;
+    final nearT = (p.dy - r.top).abs() < _reach,
+        nearB = (p.dy - r.bottom).abs() < _reach;
     final inX = p.dx > r.left - _reach && p.dx < r.right + _reach;
     final inY = p.dy > r.top - _reach && p.dy < r.bottom + _reach;
     if (!inX || !inY) return _Grab.create;
     // On a small mark, prefer the nearer of two opposite edges.
-    final left = nearL && (!nearR || (p.dx - r.left).abs() <= (p.dx - r.right).abs());
+    final left =
+        nearL && (!nearR || (p.dx - r.left).abs() <= (p.dx - r.right).abs());
     final right = nearR && !left;
-    final top = nearT && (!nearB || (p.dy - r.top).abs() <= (p.dy - r.bottom).abs());
+    final top =
+        nearT && (!nearB || (p.dy - r.top).abs() <= (p.dy - r.bottom).abs());
     final bottom = nearB && !top;
     return switch ((left, right, top, bottom)) {
       (true, _, true, _) => _Grab.topLeft,
@@ -731,10 +792,18 @@ class _AreaSelectorState extends State<AreaSelector> {
     return LayoutBuilder(
       builder: (context, box) {
         final size = box.biggest;
-        Rect toPx(Rect n) =>
-            Rect.fromLTRB(n.left * size.width, n.top * size.height, n.right * size.width, n.bottom * size.height);
-        Rect toNorm(Rect px) =>
-            Rect.fromLTRB(px.left / size.width, px.top / size.height, px.right / size.width, px.bottom / size.height);
+        Rect toPx(Rect n) => Rect.fromLTRB(
+          n.left * size.width,
+          n.top * size.height,
+          n.right * size.width,
+          n.bottom * size.height,
+        );
+        Rect toNorm(Rect px) => Rect.fromLTRB(
+          px.left / size.width,
+          px.top / size.height,
+          px.right / size.width,
+          px.bottom / size.height,
+        );
         final page = Offset.zero & size;
         final r = widget.rect == null ? null : toPx(widget.rect!);
 
@@ -742,7 +811,10 @@ class _AreaSelectorState extends State<AreaSelector> {
           final s = _startRect;
           final g = _grab;
           if (g == null) return;
-          final c = Offset(p.dx.clamp(0, size.width), p.dy.clamp(0, size.height));
+          final c = Offset(
+            p.dx.clamp(0, size.width),
+            p.dy.clamp(0, size.height),
+          );
           if (g == _Grab.create || s == null) {
             widget.onChanged(toNorm(Rect.fromPoints(_down, c)));
             return;
@@ -755,17 +827,31 @@ class _AreaSelectorState extends State<AreaSelector> {
             return;
           }
           var (l, t, rr, b) = (s.left, s.top, s.right, s.bottom);
-          if (g == _Grab.left || g == _Grab.topLeft || g == _Grab.bottomLeft) l = c.dx;
-          if (g == _Grab.right || g == _Grab.topRight || g == _Grab.bottomRight) rr = c.dx;
-          if (g == _Grab.top || g == _Grab.topLeft || g == _Grab.topRight) t = c.dy;
-          if (g == _Grab.bottom || g == _Grab.bottomLeft || g == _Grab.bottomRight) b = c.dy;
+          if (g == _Grab.left || g == _Grab.topLeft || g == _Grab.bottomLeft) {
+            l = c.dx;
+          }
+          if (g == _Grab.right || g == _Grab.topRight || g == _Grab.bottomRight) {
+            rr = c.dx;
+          }
+          if (g == _Grab.top || g == _Grab.topLeft || g == _Grab.topRight) {
+            t = c.dy;
+          }
+          if (g == _Grab.bottom ||
+              g == _Grab.bottomLeft ||
+              g == _Grab.bottomRight) {
+            b = c.dy;
+          }
           // Dragging an edge past the opposite one simply flips the mark.
-          widget.onChanged(toNorm(Rect.fromPoints(Offset(l, t), Offset(rr, b))));
+          widget.onChanged(
+            toNorm(Rect.fromPoints(Offset(l, t), Offset(rr, b))),
+          );
         }
 
         final children = <Widget>[
           Positioned.fill(
-            child: ColoredBox(color: Colors.black.withValues(alpha: r == null ? 0.08 : 0)),
+            child: ColoredBox(
+              color: Colors.black.withValues(alpha: r == null ? 0.08 : 0),
+            ),
           ),
         ];
         if (r != null) {
@@ -795,7 +881,9 @@ class _AreaSelectorState extends State<AreaSelector> {
                   color: scheme.surface,
                   border: Border.all(color: scheme.primary, width: 2.5),
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 3)],
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 3),
+                  ],
                 ),
               ),
             ),

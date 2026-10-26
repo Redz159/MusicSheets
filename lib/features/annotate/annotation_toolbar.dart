@@ -65,8 +65,12 @@ class AnnotationToolbar extends StatelessWidget {
                               tools.tool = t;
                               return true;
                             },
-                            itemBuilder: (t, _) =>
-                                _ToolButton(tool: t, tooltip: t.label, selected: tools.tool == t, enabled: true),
+                            itemBuilder: (t, _) => _ToolButton(
+                              tool: t,
+                              tooltip: t.label,
+                              selected: tools.tool == t,
+                              enabled: true,
+                            ),
                           ),
                           const _Sep(),
                           if (showColors)
@@ -85,7 +89,9 @@ class AnnotationToolbar extends StatelessWidget {
                                   color: Color(c).withValues(alpha: 1),
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: selected ? scheme.primary : scheme.outlineVariant,
+                                    color: selected
+                                        ? scheme.primary
+                                        : scheme.outlineVariant,
                                     width: selected ? 3 : 1,
                                   ),
                                 ),
@@ -104,14 +110,18 @@ class AnnotationToolbar extends StatelessWidget {
                                 height: 42,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: selected ? scheme.primaryContainer : Colors.transparent,
+                                  color: selected
+                                      ? scheme.primaryContainer
+                                      : Colors.transparent,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Container(
                                   width: 18,
                                   height: 3.0 + i * 3,
                                   decoration: BoxDecoration(
-                                    color: selected ? scheme.onPrimaryContainer : scheme.onSurface,
+                                    color: selected
+                                        ? scheme.onPrimaryContainer
+                                        : scheme.onSurface,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
@@ -119,12 +129,28 @@ class AnnotationToolbar extends StatelessWidget {
                             ),
                           ],
                           const _Sep(),
-                          _ToolButton(icon: Icons.undo, tooltip: 'Undo', onTap: store.canUndo ? store.undo : null),
-                          _ToolButton(icon: Icons.redo, tooltip: 'Redo', onTap: store.canRedo ? store.redo : null),
-                          _ToolButton(icon: Icons.delete_sweep_outlined, tooltip: 'Clear page', onTap: onClearPage),
                           _ToolButton(
-                            icon: stylusOnly ? Icons.draw : Icons.touch_app_outlined,
-                            tooltip: stylusOnly ? 'Stylus only (fingers turn pages)' : 'Draw with finger & stylus',
+                            icon: Icons.undo,
+                            tooltip: 'Undo',
+                            onTap: store.canUndo ? store.undo : null,
+                          ),
+                          _ToolButton(
+                            icon: Icons.redo,
+                            tooltip: 'Redo',
+                            onTap: store.canRedo ? store.redo : null,
+                          ),
+                          _ToolButton(
+                            icon: Icons.delete_sweep_outlined,
+                            tooltip: 'Clear page',
+                            onTap: onClearPage,
+                          ),
+                          _ToolButton(
+                            icon: stylusOnly
+                                ? Icons.draw
+                                : Icons.touch_app_outlined,
+                            tooltip: stylusOnly
+                                ? 'Stylus only (fingers turn pages)'
+                                : 'Draw with finger & stylus',
                             selected: stylusOnly,
                             onTap: () => onStylusOnly(!stylusOnly),
                           ),
@@ -167,9 +193,7 @@ class AnnotationToolbar extends StatelessWidget {
                                   ),
                                   borderRadius: BorderRadius.circular(16),
                                   color: tools.stamp == s
-                                      ? CupertinoTheme.of(
-                                          context,
-                                        ).primaryColor
+                                      ? CupertinoTheme.of(context).primaryColor
                                       : CupertinoColors.tertiarySystemFill,
                                   onPressed: () => tools.stamp = s,
                                   child: Text(
@@ -264,47 +288,45 @@ class _FlyoutState<T> extends State<_Flyout<T>> {
         if (widget.ordered || o != widget.selected) o,
     ];
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    final current = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        widget.itemBuilder(widget.selected, true),
-        SizedBox(
-          width: 22,
-          height: 42,
-          child: AnimatedRotation(
-            turns: _open ? 0.5 : 0,
-            duration: const Duration(milliseconds: 200),
-            child: Icon(
-              usesCupertinoPresentation
-                  ? CupertinoIcons.chevron_right
-                  : Icons.chevron_right,
-              size: 18,
-              color: muted,
-            ),
-          ),
-        ),
-      ],
-    );
-    void toggle() {
+    void tapCurrent() {
       if (widget.onTapCurrent?.call(widget.selected) ?? false) return;
       setState(() => _open = !_open);
     }
+
+    void toggleOptions() => setState(() => _open = !_open);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Tooltip(
           message: widget.tooltip,
+          child: _tappable(widget.selected, true, tapCurrent),
+        ),
+        SizedBox(
+          width: 22,
+          height: 42,
           child: usesCupertinoPresentation
               ? CupertinoButton(
                   padding: EdgeInsets.zero,
-                  onPressed: toggle,
-                  child: current,
+                  onPressed: toggleOptions,
+                  child: AnimatedRotation(
+                    turns: _open ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      CupertinoIcons.chevron_right,
+                      size: 18,
+                      color: muted,
+                    ),
+                  ),
                 )
               : InkWell(
-                  onTap: toggle,
-                  customBorder: const StadiumBorder(),
-                  child: current,
+                  onTap: toggleOptions,
+                  customBorder: const CircleBorder(),
+                  child: AnimatedRotation(
+                    turns: _open ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(Icons.chevron_right, size: 18, color: muted),
+                  ),
                 ),
         ),
         AnimatedSize(
@@ -382,7 +404,14 @@ class _Sep extends StatelessWidget {
 }
 
 class _ToolButton extends StatelessWidget {
-  const _ToolButton({this.icon, this.tool, required this.tooltip, this.selected = false, this.onTap, this.enabled});
+  const _ToolButton({
+    this.icon,
+    this.tool,
+    required this.tooltip,
+    this.selected = false,
+    this.onTap,
+    this.enabled,
+  });
 
   /// Defaults to `onTap != null`; set to true for a button whose tap a parent handles.
   final bool? enabled;
@@ -412,7 +441,9 @@ class _ToolButton extends StatelessWidget {
         color: selected ? scheme.primaryContainer : Colors.transparent,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: tool?.buildIcon(color, size: 22) ?? Icon(icon, size: 22, color: color),
+      child:
+          tool?.buildIcon(color, size: 22) ??
+          Icon(icon, size: 22, color: color),
     );
     return Tooltip(
       message: tooltip,
@@ -424,10 +455,10 @@ class _ToolButton extends StatelessWidget {
               child: content,
             )
           : InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: content,
-      ),
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(20),
+              child: content,
+            ),
     );
   }
 }

@@ -263,6 +263,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       trailingBuilder: _selected.isNotEmpty
           ? null
           : (s) => IconButton(
+              tooltip: 'Song actions',
               icon: const Icon(Icons.more_vert),
               onPressed: () => showSongMenu(context, ref, s),
             ),
@@ -477,8 +478,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           tooltip: 'Delete',
           icon: const Icon(Icons.delete_outline),
           onPressed: () async {
-            if (await deleteSongs(context, ref, songs))
+            if (await deleteSongs(context, ref, songs)) {
               setState(_selected.clear);
+            }
           },
         ),
         const SizedBox(width: 8),

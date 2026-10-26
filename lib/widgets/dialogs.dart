@@ -104,19 +104,36 @@ Widget platformTextField({
   ValueChanged<String>? onSubmitted,
 }) {
   if (usesCupertinoPresentation) {
-    return CupertinoTextField(
-      controller: controller,
-      autofocus: autofocus,
-      minLines: minLines,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      placeholder: hint.isNotEmpty
-          ? hint
-          : (decoration?.hintText ?? decoration?.labelText),
-      textCapitalization: textCapitalization,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      onChanged: onChanged,
-      onSubmitted: onSubmitted,
+    final label = decoration?.labelText;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (label != null) ...[
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 4),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: CupertinoColors.secondaryLabel,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+        CupertinoTextField(
+          controller: controller,
+          autofocus: autofocus,
+          minLines: minLines,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          placeholder: hint.isNotEmpty ? hint : decoration?.hintText,
+          textCapitalization: textCapitalization,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          onChanged: onChanged,
+          onSubmitted: onSubmitted,
+        ),
+      ],
     );
   }
   return TextField(
@@ -301,7 +318,7 @@ Future<bool> confirm(
 void showSnack(BuildContext context, String message, {SnackBarAction? action}) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(message), action: action, duration: Duration(seconds: 4)));
+    ..showSnackBar(SnackBar(content: Text(message), action: action));
 }
 
 /// Runs [task] while showing a small blocking progress dialog.

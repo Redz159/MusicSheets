@@ -51,37 +51,25 @@ class BackgroundScheduler {
 
   static Future<void> init() async {
     if (!supported || _initialized) return;
-    try {
-      await Workmanager().initialize(backgroundDispatcher);
-      _initialized = true;
-    } catch (e) {
-      debugPrint('BackgroundScheduler init failed: $e');
-    }
+    await Workmanager().initialize(backgroundDispatcher);
+    _initialized = true;
   }
 
   static Future<void> schedule({required bool wifiOnly}) async {
     if (!supported) return;
-    try {
-      await init();
-      await Workmanager().registerPeriodicTask(
-        _uniqueName,
-        lookupTaskName,
-        frequency: const Duration(minutes: 15),
-        existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
-        constraints: Constraints(networkType: wifiOnly ? NetworkType.unmetered : NetworkType.connected),
-      );
-    } catch (e) {
-      debugPrint('BackgroundScheduler schedule failed: $e');
-    }
+    await init();
+    await Workmanager().registerPeriodicTask(
+      _uniqueName,
+      lookupTaskName,
+      frequency: const Duration(minutes: 15),
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
+      constraints: Constraints(networkType: wifiOnly ? NetworkType.unmetered : NetworkType.connected),
+    );
   }
 
   static Future<void> cancel() async {
     if (!supported) return;
-    try {
-      await init();
-      await Workmanager().cancelByUniqueName(_uniqueName);
-    } catch (e) {
-      debugPrint('BackgroundScheduler cancel failed: $e');
-    }
+    await init();
+    await Workmanager().cancelByUniqueName(_uniqueName);
   }
 }

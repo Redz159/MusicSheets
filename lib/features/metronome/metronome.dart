@@ -247,8 +247,9 @@ class TapTempo {
   int? tap([DateTime? now]) {
     now ??= DateTime.now();
     if (_taps.isNotEmpty &&
-        now.difference(_taps.last) > const Duration(seconds: 2))
+        now.difference(_taps.last) > const Duration(seconds: 2)) {
       _taps.clear();
+    }
     _taps.add(now);
     if (_taps.length > 5) _taps.removeAt(0);
     if (_taps.length < 2) return null;
@@ -285,7 +286,6 @@ class Metronome extends ChangeNotifier {
   int _generation = 0;
   Timer? _rebuild;
   bool _disposed = false;
-  final Stopwatch _playbackClock = Stopwatch();
 
   void update(MetronomeSettings Function(MetronomeSettings s) change) {
     final next = change(_settings);
@@ -355,9 +355,6 @@ class Metronome extends ChangeNotifier {
   Future<void> start() async {
     if (_running) return;
     _running = true;
-    _playbackClock
-      ..reset()
-      ..start();
     notifyListeners();
     await _play();
   }
@@ -367,7 +364,6 @@ class Metronome extends ChangeNotifier {
     _tapEnd?.cancel();
     _tapping = false;
     _running = false;
-    _playbackClock.stop();
     _generation++;
     if (!_disposed) notifyListeners();
     await _release(_handle, _source);
@@ -385,7 +381,9 @@ class Metronome extends ChangeNotifier {
           throw StateError('iOS audio session could not be activated.');
         }
       }
-      if (!soloud.isInitialized) await soloud.init();
+      if (!soloud.isInitialized) {
+        await soloud.init(bufferSize: 1024, channels: Channels.mono);
+      }
       final wav = buildBarWav(_settings);
       final source = await soloud.loadMem('metronome-$generation.wav', wav);
       if (generation != _generation || !_running) {
@@ -400,9 +398,6 @@ class Metronome extends ChangeNotifier {
       final (oldHandle, oldSource) = (_handle, _source);
       _handle = handle;
       _source = source;
-      _playbackClock
-        ..reset()
-        ..start();
       await _release(oldHandle, oldSource);
     } catch (e) {
       debugPrint('Metronome failed: $e');
@@ -420,11 +415,18 @@ class Metronome extends ChangeNotifier {
     } catch (_) {}
   }
 
-  /// Uses a monotonic clock so visual beats do not depend on audio position updates.
+  /// The beat being heard right now, read from the audio clock so visuals stay in sync.
   MetronomePulse? pulse() {
-    if (!_running || _tapping) return null;
+    final h = _handle;
+    if (!_running || _tapping || h == null) return null;
+    final Duration pos;
+    try {
+      pos = SoLoud.instance.getPosition(h);
+    } catch (_) {
+      return null;
+    }
     final s = _settings;
-    final t = (_playbackClock.elapsedMicroseconds / 1e6) % s.barSeconds;
+    final t = (pos.inMicroseconds / 1e6) % s.barSeconds;
     final beat = (t / s.beatSeconds).floor().clamp(0, s.beats - 1);
     final inBeat = t - beat * s.beatSeconds;
     final sub = (inBeat / (s.beatSeconds / s.subdivision.clicks)).floor();

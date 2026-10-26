@@ -122,7 +122,6 @@ ThemeData buildTheme(Brightness brightness) {
     colorScheme: scheme,
     brightness: brightness,
     platform: defaultTargetPlatform,
-    useSystemColors: true,
     typography: typography,
     visualDensity: VisualDensity.standard,
     pageTransitionsTheme: const PageTransitionsTheme(
@@ -130,6 +129,7 @@ ThemeData buildTheme(Brightness brightness) {
         TargetPlatform.android: SharedAxisPageTransitionsBuilder(
           transitionType: SharedAxisTransitionType.horizontal,
         ),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
       },
     ),
     appBarTheme: AppBarTheme(
@@ -208,77 +208,81 @@ class HomeShell extends ConsumerWidget {
     final wide = MediaQuery.sizeOf(context).width >= 720;
     if (wide) {
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        return CupertinoPageScaffold(
-          child: SafeArea(
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 220,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 18, 12, 18),
-                        child: Text(
-                          'MusicSheets',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                      ),
-                      for (var i = 0; i < _destinations.length; i++)
+        return Scaffold(
+          body: CupertinoPageScaffold(
+            child: SafeArea(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 220,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
+                          padding: const EdgeInsets.fromLTRB(20, 18, 12, 18),
+                          child: Text(
+                            'MusicSheets',
+                            style: Theme.of(context).textTheme.titleLarge,
                           ),
-                          child: CupertinoButton(
+                        ),
+                        for (var i = 0; i < _destinations.length; i++)
+                          Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
+                              horizontal: 8,
+                              vertical: 2,
                             ),
-                            color: i == shell.currentIndex
-                                ? CupertinoColors.activeBlue.withValues(
-                                    alpha: 0.12,
-                                  )
-                                : null,
-                            onPressed: () => _go(i),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _cupertinoIcons[i],
-                                  size: 19,
-                                  color: i == shell.currentIndex
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  _destinations[i].$3,
-                                  style: TextStyle(
+                            child: CupertinoButton(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              color: i == shell.currentIndex
+                                  ? CupertinoColors.activeBlue.withValues(
+                                      alpha: 0.12,
+                                    )
+                                  : null,
+                              onPressed: () => _go(i),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _cupertinoIcons[i],
+                                    size: 19,
                                     color: i == shell.currentIndex
                                         ? Theme.of(context).colorScheme.primary
                                         : Theme.of(context)
                                               .colorScheme
-                                              .onSurface,
-                                    fontWeight: i == shell.currentIndex
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
+                                              .onSurfaceVariant,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    _destinations[i].$3,
+                                    style: TextStyle(
+                                      color: i == shell.currentIndex
+                                          ? Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                          : Theme.of(context)
+                                                .colorScheme
+                                                .onSurface,
+                                      fontWeight: i == shell.currentIndex
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Container(
-                  width: 1,
-                  color: CupertinoColors.separator.resolveFrom(context),
-                ),
-                Expanded(child: shell),
-              ],
+                  Container(
+                    width: 1,
+                    color: CupertinoColors.separator.resolveFrom(context),
+                  ),
+                  Expanded(child: shell),
+                ],
+              ),
             ),
           ),
         );
