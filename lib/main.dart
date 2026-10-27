@@ -20,17 +20,23 @@ Future<void> main() async {
     final session = await AudioSession.instance;
     await session.configure(
       const AudioSessionConfiguration.music().copyWith(
-        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers,
+        avAudioSessionCategoryOptions:
+            AVAudioSessionCategoryOptions.mixWithOthers,
       ),
     );
   }
-  final results = await Future.wait([AppPaths.resolve(), SharedPreferences.getInstance()]);
+  final results = await Future.wait([
+    AppPaths.resolve(),
+    SharedPreferences.getInstance(),
+  ]);
   await BackgroundScheduler.init();
-  runApp(ProviderScope(
-    overrides: [
-      appPathsProvider.overrideWithValue(results[0] as AppPaths),
-      sharedPrefsProvider.overrideWithValue(results[1] as SharedPreferences),
-    ],
-    child: const MusicSheetsApp(),
-  ));
+  runApp(
+    ProviderScope(
+      overrides: [
+        appPathsProvider.overrideWithValue(results[0] as AppPaths),
+        sharedPrefsProvider.overrideWithValue(results[1] as SharedPreferences),
+      ],
+      child: const MusicSheetsApp(),
+    ),
+  );
 }

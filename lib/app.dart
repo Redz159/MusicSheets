@@ -1,4 +1,6 @@
 import 'package:animations/animations.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,28 +22,54 @@ final routerProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => HomeShell(shell: shell),
         branches: [
-          StatefulShellBranch(routes: [
-            GoRoute(path: '/library', builder: (_, _) => const LibraryScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: '/folders', builder: (_, _) => const FoldersScreen(), routes: [
+          StatefulShellBranch(
+            routes: [
               GoRoute(
-                path: ':id',
-                builder: (_, s) => FolderScreen(folderId: int.parse(s.pathParameters['id']!)),
+                path: '/library',
+                builder: (_, _) => const LibraryScreen(),
               ),
-            ]),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: '/setlists', builder: (_, _) => const SetlistsScreen(), routes: [
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
               GoRoute(
-                path: ':id',
-                builder: (_, s) => SetlistScreen(setlistId: int.parse(s.pathParameters['id']!)),
+                path: '/folders',
+                builder: (_, _) => const FoldersScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (_, s) => FolderScreen(
+                      folderId: int.parse(s.pathParameters['id']!),
+                    ),
+                  ),
+                ],
               ),
-            ]),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
-          ]),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/setlists',
+                builder: (_, _) => const SetlistsScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (_, s) => SetlistScreen(
+                      setlistId: int.parse(s.pathParameters['id']!),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/settings',
+                builder: (_, _) => const SettingsScreen(),
+              ),
+            ],
+          ),
         ],
       ),
       GoRoute(
@@ -51,42 +79,79 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: ViewerScreen(args: state.extra! as ViewerArgs),
           transitionDuration: const Duration(milliseconds: 260),
           reverseTransitionDuration: const Duration(milliseconds: 200),
-          transitionsBuilder: (context, animation, _, child) => FadeTransition(
-            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-            child: ScaleTransition(
-              scale: Tween(begin: 0.97, end: 1.0).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
-              child: child,
-            ),
-          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            if (defaultTargetPlatform == TargetPlatform.iOS) {
+              return CupertinoPageTransition(
+                primaryRouteAnimation: animation,
+                secondaryRouteAnimation: secondaryAnimation,
+                linearTransition: false,
+                child: child,
+              );
+            }
+            return FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOut,
+              ),
+              child: ScaleTransition(
+                scale: Tween(begin: 0.97, end: 1.0).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+                child: child,
+              ),
+            );
+          },
         ),
       ),
     ],
   );
 });
 
-const _seed = Color(0xFF4C5FD5);
-
 ThemeData buildTheme(Brightness brightness) {
-  final scheme = ColorScheme.fromSeed(seedColor: _seed, brightness: brightness);
+  final scheme = ColorScheme.fromSeed(
+    seedColor: defaultTargetPlatform == TargetPlatform.iOS
+        ? CupertinoColors.activeBlue
+        : const Color(0xFF4C5FD5),
+    brightness: brightness,
+  );
+  final typography = Typography.material2021(platform: defaultTargetPlatform);
   return ThemeData(
     colorScheme: scheme,
-    useMaterial3: true,
+    brightness: brightness,
+    platform: defaultTargetPlatform,
+    typography: typography,
     visualDensity: VisualDensity.standard,
-    pageTransitionsTheme: const PageTransitionsTheme(builders: {
-      TargetPlatform.android: SharedAxisPageTransitionsBuilder(transitionType: SharedAxisTransitionType.horizontal),
-    }),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: SharedAxisPageTransitionsBuilder(
+          transitionType: SharedAxisTransitionType.horizontal,
+        ),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
     appBarTheme: AppBarTheme(
       backgroundColor: scheme.surface,
       surfaceTintColor: Colors.transparent,
       scrolledUnderElevation: 1,
-      centerTitle: false,
-      titleTextStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: scheme.onSurface),
+      centerTitle: defaultTargetPlatform == TargetPlatform.iOS,
+      titleTextStyle: typography.black.titleLarge?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: scheme.onSurface,
+      ),
     ),
-    listTileTheme: const ListTileThemeData(contentPadding: EdgeInsets.symmetric(horizontal: 20)),
+    listTileTheme: const ListTileThemeData(
+      contentPadding: EdgeInsets.symmetric(horizontal: 20),
+    ),
     snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
     ),
     bottomSheetTheme: const BottomSheetThemeData(showDragHandle: true),
     cardTheme: CardThemeData(
@@ -127,44 +192,158 @@ class HomeShell extends ConsumerWidget {
     (Icons.queue_music_outlined, Icons.queue_music, 'Setlists'),
     (Icons.settings_outlined, Icons.settings, 'Settings'),
   ];
+  static const _cupertinoIcons = [
+    CupertinoIcons.music_note,
+    CupertinoIcons.folder,
+    CupertinoIcons.music_note_list,
+    CupertinoIcons.gear,
+  ];
 
-  void _go(int i) => shell.goBranch(i, initialLocation: i == shell.currentIndex);
+  void _go(int i) =>
+      shell.goBranch(i, initialLocation: i == shell.currentIndex);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(lookupControllerProvider); // keeps the metadata queue running
     final wide = MediaQuery.sizeOf(context).width >= 720;
     if (wide) {
-      return Scaffold(
-        body: Row(children: [
-          NavigationRail(
-            selectedIndex: shell.currentIndex,
-            onDestinationSelected: _go,
-            labelType: NavigationRailLabelType.all,
-            groupAlignment: -0.85,
-            leading: Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 16),
-              child: Icon(Icons.music_note_rounded, size: 32, color: Theme.of(context).colorScheme.primary),
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        return Scaffold(
+          body: CupertinoPageScaffold(
+            child: SafeArea(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 220,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 18, 12, 18),
+                          child: Text(
+                            'MusicSheets',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                        ),
+                        for (var i = 0; i < _destinations.length; i++)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            child: CupertinoButton(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              color: i == shell.currentIndex
+                                  ? CupertinoColors.activeBlue.withValues(
+                                      alpha: 0.12,
+                                    )
+                                  : null,
+                              onPressed: () => _go(i),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _cupertinoIcons[i],
+                                    size: 19,
+                                    color: i == shell.currentIndex
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    _destinations[i].$3,
+                                    style: TextStyle(
+                                      color: i == shell.currentIndex
+                                          ? Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                          : Theme.of(context)
+                                                .colorScheme
+                                                .onSurface,
+                                      fontWeight: i == shell.currentIndex
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    color: CupertinoColors.separator.resolveFrom(context),
+                  ),
+                  Expanded(child: shell),
+                ],
+              ),
             ),
-            destinations: [
-              for (final d in _destinations)
-                NavigationRailDestination(icon: Icon(d.$1), selectedIcon: Icon(d.$2), label: Text(d.$3)),
-            ],
           ),
-          const VerticalDivider(width: 1, thickness: 1),
-          Expanded(child: shell),
-        ]),
+        );
+      }
+      return Scaffold(
+        body: Row(
+          children: [
+            NavigationRail(
+              selectedIndex: shell.currentIndex,
+              onDestinationSelected: _go,
+              labelType: NavigationRailLabelType.all,
+              groupAlignment: -0.85,
+              leading: Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 16),
+                child: Icon(
+                  Icons.music_note_rounded,
+                  size: 32,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              destinations: [
+                for (final d in _destinations)
+                  NavigationRailDestination(
+                    icon: Icon(d.$1),
+                    selectedIcon: Icon(d.$2),
+                    label: Text(d.$3),
+                  ),
+              ],
+            ),
+            const VerticalDivider(width: 1, thickness: 1),
+            Expanded(child: shell),
+          ],
+        ),
       );
     }
     return Scaffold(
       body: shell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: shell.currentIndex,
-        onDestinationSelected: _go,
-        destinations: [
-          for (final d in _destinations) NavigationDestination(icon: Icon(d.$1), selectedIcon: Icon(d.$2), label: d.$3),
-        ],
-      ),
+      bottomNavigationBar: defaultTargetPlatform == TargetPlatform.iOS
+          ? CupertinoTabBar(
+              currentIndex: shell.currentIndex,
+              onTap: _go,
+              items: [
+                for (var i = 0; i < _destinations.length; i++)
+                  BottomNavigationBarItem(
+                    icon: Icon(_cupertinoIcons[i]),
+                    label: _destinations[i].$3,
+                  ),
+              ],
+            )
+          : NavigationBar(
+              selectedIndex: shell.currentIndex,
+              onDestinationSelected: _go,
+              destinations: [
+                for (final d in _destinations)
+                  NavigationDestination(
+                    icon: Icon(d.$1),
+                    selectedIcon: Icon(d.$2),
+                    label: d.$3,
+                  ),
+              ],
+            ),
     );
   }
 }

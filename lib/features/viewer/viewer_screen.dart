@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +16,7 @@ import '../../data/db.dart';
 import '../../data/providers.dart';
 import '../../services/pdf_render.dart';
 import '../../widgets/dialogs.dart';
+import '../../widgets/platform_widgets.dart';
 import '../../widgets/song_actions.dart';
 import '../annotate/annotation_layer.dart';
 import '../annotate/annotation_store.dart';
@@ -126,10 +128,8 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     _flat = flattenPages(counts);
     _offsets = songOffsets(counts);
     final s = songs[startSong];
-    final page = (args.startPage ?? (args.resumeLastPage ? s.lastPage : 0)).clamp(
-      0,
-      (s.pageCount - 1).clamp(0, 1 << 30),
-    );
+    final page = (args.startPage ?? (args.resumeLastPage ? s.lastPage : 0))
+        .clamp(0, (s.pageCount - 1).clamp(0, 1 << 30));
     _startFlat = _offsets[startSong] + page;
     await Future.wait([
       _store.load(songs.map((s) => s.id)),
@@ -137,7 +137,9 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     ]);
     if (!mounted) return;
     setState(() => _songs = songs);
-    _clipSub = _db.watchAudioClips([for (final s in songs) s.id]).listen((clips) {
+    _clipSub = _db.watchAudioClips([for (final s in songs) s.id]).listen((
+      clips,
+    ) {
       _audio.refresh(clips);
       if (mounted) setState(() => _clips = clips);
     });
@@ -173,7 +175,8 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     return ref.read(songByIdProvider)[s.id] ?? s;
   }
 
-  bool get _halfMode => ref.read(settingsProvider).halfPageTurn && _spread == false;
+  bool get _halfMode =>
+      ref.read(settingsProvider).halfPageTurn && _spread == false;
 
   void _goToUnit(int u, {bool animate = false}) {
     if (_units.isEmpty) return;
@@ -184,7 +187,11 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     if (u == _unit) {
       setState(() => _half = false);
     } else if (animate) {
-      pc.animateToPage(u, duration: const Duration(milliseconds: 280), curve: Curves.easeOutCubic);
+      pc.animateToPage(
+        u,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
     } else {
       pc.jumpToPage(u);
     }
@@ -253,7 +260,10 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
   void _annoPointerMove(PointerMoveEvent e) {
     if (!_touches.containsKey(e.pointer)) return;
     _touches[e.pointer] = e.localPosition;
-    final fingerPan = ref.read(settingsProvider).stylusOnly && _zoomed && _touches.length == 1;
+    final fingerPan =
+        ref.read(settingsProvider).stylusOnly &&
+        _zoomed &&
+        _touches.length == 1;
     if (_touches.length < 2 && !fingerPan) return;
 
     final pts = _touches.values.take(2).toList();
@@ -272,8 +282,14 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     s = k2 / k;
     // Keep the content under the fingers: t' = s·t + focal − s·lastFocal.
     final size = MediaQuery.sizeOf(context);
-    final tx = (s * m.entry(0, 3) + focal.dx - s * lastFocal.dx).clamp(size.width * (1 - k2), 0.0);
-    final ty = (s * m.entry(1, 3) + focal.dy - s * lastFocal.dy).clamp(size.height * (1 - k2), 0.0);
+    final tx = (s * m.entry(0, 3) + focal.dx - s * lastFocal.dx).clamp(
+      size.width * (1 - k2),
+      0.0,
+    );
+    final ty = (s * m.entry(1, 3) + focal.dy - s * lastFocal.dy).clamp(
+      size.height * (1 - k2),
+      0.0,
+    );
     _transform.value = Matrix4.identity()
       ..setEntry(0, 0, k2)
       ..setEntry(1, 1, k2)
@@ -331,7 +347,12 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
         try {
           final doc = await _docs.load(_paths.pdf(song.fileName));
           if (!mounted) return;
-          final img = await PageImageCache.instance.get(doc, song.fileName, _flat[f].page, width);
+          final img = await PageImageCache.instance.get(
+            doc,
+            song.fileName,
+            _flat[f].page,
+            width,
+          );
           img?.dispose();
         } catch (_) {}
       }
@@ -357,12 +378,18 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       _next();
     } else {
       setState(() => _chrome = !_chrome);
-      if (_chrome) WidgetsBinding.instance.addPostFrameCallback((_) => _scrollScrubberToCurrent());
+      if (_chrome) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _scrollScrubberToCurrent(),
+        );
+      }
     }
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent e) {
-    if (e is! KeyDownEvent && e is! KeyRepeatEvent) return KeyEventResult.ignored;
+    if (e is! KeyDownEvent && e is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
     final swap = ref.read(settingsProvider).swapPedal;
     final k = e.logicalKey;
     final forward = {
@@ -414,7 +441,9 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
   void _scrollScrubberToCurrent() {
     if (!_scrubber.hasClients) return;
     const extent = _ScrubberStrip.itemExtent;
-    final target = _currentFlat * extent - (_scrubber.position.viewportDimension - extent) / 2;
+    final target =
+        _currentFlat * extent -
+        (_scrubber.position.viewportDimension - extent) / 2;
     _scrubber.jumpTo(target.clamp(0, _scrubber.position.maxScrollExtent));
   }
 
@@ -429,8 +458,12 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     _half = false;
     final old = _pc;
     _pc = PageController(initialPage: _unit);
-    if (old != null) WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
-    if (_currentSong == null) WidgetsBinding.instance.addPostFrameCallback((_) => _afterUnitChange());
+    if (old != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
+    }
+    if (_currentSong == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _afterUnitChange());
+    }
   }
 
   @override
@@ -444,10 +477,14 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     if (songs == null) {
       return const Scaffold(
         backgroundColor: background,
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: CircularProgressIndicator.adaptive()),
       );
     }
-    _syncUnits(settings.twoPageLandscape && size.width > size.height && size.width >= 700);
+    _syncUnits(
+      settings.twoPageLandscape &&
+          size.width > size.height &&
+          size.width >= 700,
+    );
     final current = _songAt(_currentFlat);
     final pageInSong = _flat[_currentFlat].page;
 
@@ -463,8 +500,12 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       },
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: settings.pageTint == PageTint.night ? Colors.black : background,
-        endDrawer: widget.args.isSetlist ? _songDrawer(songs) : null,
+        backgroundColor: settings.pageTint == PageTint.night
+            ? Colors.black
+            : background,
+        endDrawer: widget.args.isSetlist && !usesCupertinoPresentation
+            ? _songDrawer(songs)
+            : null,
         endDrawerEnableOpenDragGesture: false, // edge swipes turn pages instead
         body: Focus(
           focusNode: _focus,
@@ -480,7 +521,9 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                   child: PageView.builder(
                     key: ValueKey(_spread),
                     controller: _pc,
-                    physics: _locked || _zoomed ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
+                    physics: _locked || _zoomed
+                        ? const NeverScrollableScrollPhysics()
+                        : const PageScrollPhysics(),
                     itemCount: _units.length,
                     onPageChanged: _onPageChanged,
                     itemBuilder: (context, u) => _buildUnit(u, settings),
@@ -498,12 +541,21 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                       opacity: _toast == null ? 0 : 1,
                       duration: const Duration(milliseconds: 200),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.78),
                           borderRadius: BorderRadius.circular(24),
                         ),
-                        child: Text(_toast ?? '', style: const TextStyle(color: Colors.white, fontSize: 16)),
+                        child: Text(
+                          _toast ?? '',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -518,13 +570,24 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                   right: 12,
                   width: math.min(380, size.width - 24),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(maxHeight: size.height - MediaQuery.paddingOf(context).top - 96),
+                    constraints: BoxConstraints(
+                      maxHeight:
+                          size.height - MediaQuery.paddingOf(context).top - 96,
+                    ),
                     child: MetronomePanel(
                       metronome: _metronome,
                       songTempo: current.tempo,
                       onSaveTempo: (bpm) async {
-                        await _db.updateSong(current.id, SongsCompanion(tempo: Value(bpm)));
-                        if (context.mounted) showSnack(context, 'Saved $bpm BPM to “${current.title}”');
+                        await _db.updateSong(
+                          current.id,
+                          SongsCompanion(tempo: Value(bpm)),
+                        );
+                        if (context.mounted) {
+                          showSnack(
+                            context,
+                            'Saved $bpm BPM to “${current.title}”',
+                          );
+                        }
                       },
                       onClose: () => setState(() => _metronomeOpen = false),
                     ),
@@ -537,9 +600,14 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOutCubic,
                     right: 12,
-                    bottom: MediaQuery.paddingOf(context).bottom + (_chrome ? 136 : 16),
+                    bottom:
+                        MediaQuery.paddingOf(context).bottom +
+                        (_chrome ? 136 : 16),
                     child: _metronome.running
-                        ? MetronomePill(metronome: _metronome, onOpen: () => setState(() => _metronomeOpen = true))
+                        ? MetronomePill(
+                            metronome: _metronome,
+                            onOpen: () => setState(() => _metronomeOpen = true),
+                          )
                         : const SizedBox.shrink(),
                   ),
                 ),
@@ -549,7 +617,10 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                   right: 12,
                   width: math.min(400, size.width - 24),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(maxHeight: size.height - MediaQuery.paddingOf(context).top - 96),
+                    constraints: BoxConstraints(
+                      maxHeight:
+                          size.height - MediaQuery.paddingOf(context).top - 96,
+                    ),
                     child: AudioPanel(
                       playback: _audio,
                       clips: [
@@ -573,9 +644,14 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOutCubic,
                     left: 12,
-                    bottom: MediaQuery.paddingOf(context).bottom + (_chrome ? 136 : 16),
+                    bottom:
+                        MediaQuery.paddingOf(context).bottom +
+                        (_chrome ? 136 : 16),
                     child: _marking == null
-                        ? AudioPill(playback: _audio, onOpen: () => setState(() => _audioOpen = true))
+                        ? AudioPill(
+                            playback: _audio,
+                            onOpen: () => setState(() => _audioOpen = true),
+                          )
                         : const SizedBox.shrink(),
                   ),
                 ),
@@ -590,7 +666,9 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                       tools: _tools,
                       store: _store,
                       stylusOnly: settings.stylusOnly,
-                      onStylusOnly: (v) => ref.read(settingsProvider.notifier).set((s) => s.copyWith(stylusOnly: v)),
+                      onStylusOnly: (v) => ref
+                          .read(settingsProvider.notifier)
+                          .set((s) => s.copyWith(stylusOnly: v)),
                       onClearPage: () {
                         for (final f in _units[_unit]) {
                           _store.clearPage(_songAt(f).id, _flat[f].page);
@@ -617,16 +695,33 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       final editable = isCurrent && _annotating;
       final zoom = isCurrent ? _renderZoom : 1.0;
       if (pages.length == 1) {
-        child = _pageSlot(pages.first, settings, editable: editable, zoom: zoom);
+        child = _pageSlot(
+          pages.first,
+          settings,
+          editable: editable,
+          zoom: zoom,
+        );
       } else {
         child = Row(
           children: [
             Expanded(
-              child: _pageSlot(pages[0], settings, editable: editable, zoom: zoom, alignment: Alignment.centerRight),
+              child: _pageSlot(
+                pages[0],
+                settings,
+                editable: editable,
+                zoom: zoom,
+                alignment: Alignment.centerRight,
+              ),
             ),
             const SizedBox(width: 4),
             Expanded(
-              child: _pageSlot(pages[1], settings, editable: editable, zoom: zoom, alignment: Alignment.centerLeft),
+              child: _pageSlot(
+                pages[1],
+                settings,
+                editable: editable,
+                zoom: zoom,
+                alignment: Alignment.centerLeft,
+              ),
             ),
           ],
         );
@@ -707,18 +802,34 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
         builder: (context, snap) {
           if (snap.hasError) {
             return const Center(
-              child: Text('Could not open this PDF', style: TextStyle(color: Colors.white70)),
+              child: Text(
+                'Could not open this PDF',
+                style: TextStyle(color: Colors.white70),
+              ),
             );
           }
           if (!snap.hasData) return const SizedBox.expand();
-          return _pageSlot(flat, settings, editable: editable, zoom: zoom, alignment: alignment);
+          return _pageSlot(
+            flat,
+            settings,
+            editable: editable,
+            zoom: zoom,
+            alignment: alignment,
+          );
         },
       );
     }
     final page = doc.pages[ref0.page.clamp(0, doc.pages.length - 1)];
     final filter = tintFilter(settings.pageTint);
-    Widget image = PdfPageImage(doc: doc, docKey: song.fileName, page: ref0.page, zoom: zoom);
-    if (filter != null) image = ColorFiltered(colorFilter: filter, child: image);
+    Widget image = PdfPageImage(
+      doc: doc,
+      docKey: song.fileName,
+      page: ref0.page,
+      zoom: zoom,
+    );
+    if (filter != null) {
+      image = ColorFiltered(colorFilter: filter, child: image);
+    }
     return Align(
       alignment: alignment,
       child: AspectRatio(
@@ -727,7 +838,9 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
           builder: (context, c) {
             _slotWidth = c.maxWidth;
             return DecoratedBox(
-              decoration: const BoxDecoration(boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 10)]),
+              decoration: const BoxDecoration(
+                boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 10)],
+              ),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -749,18 +862,25 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                       if (g.dx / w > 1 - zone) _next();
                     },
                     // When zoomed, a finger pans instead of turning the page.
-                    onFingerSwipe: _zoomed ? null : (d) => d > 0 ? _next() : _prev(),
+                    onFingerSwipe: _zoomed
+                        ? null
+                        : (d) => d > 0 ? _next() : _prev(),
                   ),
                   if (_marking != null && _units[_unit].contains(flat))
                     AreaSelector(
                       rect: _markRect?.flat == flat ? _markRect!.rect : null,
-                      onChanged: (r) => setState(() => _markRect = r == null ? null : (flat: flat, rect: r)),
+                      onChanged: (r) => setState(
+                        () => _markRect = r == null
+                            ? null
+                            : (flat: flat, rect: r),
+                      ),
                     )
                   else if (!_annotating)
                     ClipAreasLayer(
                       clips: [
                         for (final c in _clips)
-                          if (c.songId == song.id && c.area?.page == ref0.page) c,
+                          if (c.songId == song.id && c.area?.page == ref0.page)
+                            c,
                       ],
                       playback: _audio,
                       showAll: _audioOpen,
@@ -784,7 +904,9 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       final songIndex = _songs!.indexWhere((s) => s.id == c.songId);
       if (songIndex >= 0) {
         final flat = _offsets[songIndex] + a.page;
-        if (flat < _flat.length && !_units[_unit].contains(flat)) _goToFlat(flat);
+        if (flat < _flat.length && !_units[_unit].contains(flat)) {
+          _goToFlat(flat);
+        }
       }
     }
     try {
@@ -803,17 +925,24 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       return;
     }
     if (clip == null || !mounted) return;
-    final part = await showDialog<bool>(
+    final part = await showPlatformDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => AlertDialog.adaptive(
         title: Text('“${clip!.title}” added'),
-        content: const Text('Is this recording for the whole song or for a part of it?'),
+        content: const Text(
+          'Is this recording for the whole song or for a part of it?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Whole song')),
-          FilledButton.icon(
+          platformDialogAction(
+            context,
+            label: 'Whole song',
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          platformDialogAction(
+            context,
+            label: 'Mark a part',
+            isDefault: true,
             onPressed: () => Navigator.pop(context, true),
-            icon: const Icon(Icons.highlight_alt),
-            label: const Text('Mark a part'),
           ),
         ],
       ),
@@ -829,7 +958,10 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       final flat = songIndex < 0 ? -1 : _offsets[songIndex] + a.page;
       if (flat >= 0 && flat < _flat.length) {
         if (!_units[_unit].contains(flat)) _goToFlat(flat);
-        initial = (flat: flat, rect: Rect.fromLTRB(a.left, a.top, a.right, a.bottom));
+        initial = (
+          flat: flat,
+          rect: Rect.fromLTRB(a.left, a.top, a.right, a.bottom),
+        );
       }
     }
     _transform.value = Matrix4.identity();
@@ -857,20 +989,39 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       return;
     }
     final r = sel.rect;
-    await setClipArea(_db, clip, page.page, l: r.left, t: r.top, r: r.right, b: r.bottom);
+    await setClipArea(
+      _db,
+      clip,
+      page.page,
+      l: r.left,
+      t: r.top,
+      r: r.right,
+      b: r.bottom,
+    );
     if (!mounted) return;
     _endMarking();
     setState(() => _audioOpen = true);
   }
 
   Future<void> _renameClip(AudioClip c) async {
-    final name = await promptText(context, title: 'Rename recording', initial: c.title);
+    final name = await promptText(
+      context,
+      title: 'Rename recording',
+      initial: c.title,
+    );
     if (name == null || name.trim().isEmpty) return;
-    await _db.updateAudioClip(c.id, AudioClipsCompanion(title: Value(name.trim())));
+    await _db.updateAudioClip(
+      c.id,
+      AudioClipsCompanion(title: Value(name.trim())),
+    );
   }
 
   Future<void> _deleteClip(AudioClip c) async {
-    final ok = await confirm(context, title: 'Delete “${c.title}”?', message: 'The audio file is removed from the app.');
+    final ok = await confirm(
+      context,
+      title: 'Delete “${c.title}”?',
+      message: 'The audio file is removed from the app.',
+    );
     if (ok) await deleteAudioClip(_db, _paths, c);
   }
 
@@ -883,34 +1034,82 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       left: 12,
       right: 12,
       child: Center(
-        child: Material(
-          elevation: 6,
-          shadowColor: Colors.black54,
-          color: scheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(28),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 6, 6, 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.highlight_alt, color: scheme.primary),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: Text(
-                    sel == null
-                        ? 'Drag over the part for “${_marking!.title}”'
-                        : 'Drag the edges or corners to adjust “${_marking!.title}”',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+        child: usesCupertinoPresentation
+            ? Container(
+                decoration: BoxDecoration(
+                  color: CupertinoColors.secondarySystemGroupedBackground
+                      .resolveFrom(context),
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x30000000),
+                      blurRadius: 20,
+                      offset: Offset(0, 6),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(CupertinoIcons.crop),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        sel == null
+                            ? 'Drag over the part for “${_marking!.title}”'
+                            : 'Drag the edges or corners to adjust “${_marking!.title}”',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      onPressed: _endMarking,
+                      child: const Text('Cancel'),
+                    ),
+                    CupertinoButton.filled(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      onPressed: valid ? _saveMarking : null,
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              )
+            : Material(
+                elevation: 6,
+                shadowColor: Colors.black54,
+                color: scheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(28),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 6, 6, 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.highlight_alt, color: scheme.primary),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          sel == null
+                              ? 'Drag over the part for “${_marking!.title}”'
+                              : 'Drag the edges or corners to adjust “${_marking!.title}”',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: _endMarking,
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: valid ? _saveMarking : null,
+                        child: const Text('Save'),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                TextButton(onPressed: _endMarking, child: const Text('Cancel')),
-                FilledButton(onPressed: valid ? _saveMarking : null, child: const Text('Save')),
-              ],
-            ),
-          ),
-        ),
+              ),
       ),
     );
   }
@@ -924,129 +1123,209 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     final pageLabel = _units[_unit].length == 2
         ? '${pageInSong + 1}–${pageInSong + 2} / ${current.pageCount}'
         : '${pageInSong + 1} / ${current.pageCount}';
+    Widget action(
+      IconData materialIcon,
+      IconData cupertinoIcon,
+      String tooltip,
+      VoidCallback onPressed, {
+      bool selected = false,
+    }) {
+      if (usesCupertinoPresentation) {
+        return Tooltip(
+          message: tooltip,
+          child: CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 7),
+            onPressed: onPressed,
+            child: Icon(
+              cupertinoIcon,
+              color: selected ? CupertinoTheme.of(context).primaryColor : null,
+            ),
+          ),
+        );
+      }
+      return IconButton(
+        tooltip: tooltip,
+        isSelected: selected,
+        icon: Icon(materialIcon),
+        onPressed: onPressed,
+      );
+    }
+
+    final toolbar = Padding(
+      padding: EdgeInsets.only(top: top, left: 4, right: 8),
+      child: SizedBox(
+        height: 64,
+        child: Row(
+          children: [
+            action(
+              Icons.arrow_back,
+              CupertinoIcons.back,
+              'Back',
+              () => Navigator.of(context).maybePop(),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    current.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  Text(
+                    [
+                      if (widget.args.isSetlist)
+                        '${widget.args.setlistName} · ${songIndex + 1}/${_songs!.length}',
+                      if (current.composer.isNotEmpty) current.composer,
+                      'Page $pageLabel',
+                    ].join('  ·  '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            action(
+              Icons.play_circle_outline,
+              CupertinoIcons.music_note_list,
+              'Recordings',
+              () => setState(() {
+                _audioOpen = !_audioOpen;
+                _metronomeOpen = false;
+              }),
+              selected: _audioOpen,
+            ),
+            action(
+              Icons.draw_outlined,
+              CupertinoIcons.pencil,
+              'Annotate',
+              () => _setAnnotating(true),
+            ),
+            if (usesCupertinoPresentation)
+              Tooltip(
+                message: 'Metronome',
+                child: CupertinoButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 7),
+                  onPressed: () => setState(() {
+                    _metronomeOpen = !_metronomeOpen;
+                    _audioOpen = false;
+                  }),
+                  child: MetronomeIcon(
+                    color: _metronomeOpen
+                        ? CupertinoTheme.of(context).primaryColor
+                        : null,
+                  ),
+                ),
+              )
+            else
+              IconButton(
+                tooltip: 'Metronome',
+                isSelected: _metronomeOpen,
+                icon: const MetronomeIcon(),
+                onPressed: () => setState(() {
+                  _metronomeOpen = !_metronomeOpen;
+                  _audioOpen = false;
+                }),
+              ),
+            PlatformMenuButton<String>(
+              tooltip: 'View options',
+              icon: const Icon(Icons.chrome_reader_mode_outlined),
+              cupertinoIcon: CupertinoIcons.book,
+              onSelected: (v) {
+                switch (v) {
+                  case 'two':
+                    notifier.set(
+                      (s) => s.copyWith(twoPageLandscape: !s.twoPageLandscape),
+                    );
+                  case 'half':
+                    notifier.set(
+                      (s) => s.copyWith(halfPageTurn: !s.halfPageTurn),
+                    );
+                    setState(() => _half = false);
+                  default:
+                    notifier.set(
+                      (s) => s.copyWith(pageTint: PageTint.values.byName(v)),
+                    );
+                }
+              },
+              actions: [
+                PlatformMenuAction(
+                  value: 'two',
+                  selected: settings.twoPageLandscape,
+                  title: 'Two pages in landscape',
+                ),
+                PlatformMenuAction(
+                  value: 'half',
+                  selected: settings.halfPageTurn,
+                  title: 'Half-page turns',
+                ),
+                for (final tint in PageTint.values)
+                  PlatformMenuAction(
+                    value: tint.name,
+                    selected: settings.pageTint == tint,
+                    title: '${tint.label} page',
+                  ),
+              ],
+            ),
+            action(
+              Icons.ios_share,
+              CupertinoIcons.share,
+              'Share PDF',
+              () async {
+                await _store.flush();
+                if (mounted) {
+                  await exportSongs(context, ref, [current], current.title);
+                }
+              },
+            ),
+            action(
+              Icons.info_outline,
+              CupertinoIcons.info,
+              'Edit details',
+              () => editSong(context, ref, current),
+            ),
+            if (widget.args.isSetlist)
+              action(
+                Icons.format_list_numbered,
+                CupertinoIcons.list_number,
+                'Songs',
+                _showSongPicker,
+              ),
+          ],
+        ),
+      ),
+    );
+
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
       top: _chrome ? 0 : -(top + 80),
       left: 0,
       right: 0,
-      child: Material(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
-        elevation: 3,
-        child: Padding(
-          padding: EdgeInsets.only(top: top, left: 4, right: 8),
-          child: SizedBox(
-            height: 64,
-            child: Row(
-              children: [
-                IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.of(context).maybePop()),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        current.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      Text(
-                        [
-                          if (widget.args.isSetlist) '${widget.args.setlistName} · ${songIndex + 1}/${_songs!.length}',
-                          if (current.composer.isNotEmpty) current.composer,
-                          'Page $pageLabel',
-                        ].join('  ·  '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
+      child: usesCupertinoPresentation
+          ? Container(
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemBackground.resolveFrom(context),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x26000000),
+                    blurRadius: 12,
+                    offset: Offset(0, 3),
                   ),
-                ),
-                IconButton(
-                  tooltip: 'Recordings',
-                  isSelected: _audioOpen,
-                  icon: const Icon(Icons.play_circle_outline),
-                  selectedIcon: const Icon(Icons.play_circle),
-                  onPressed: () => setState(() {
-                    _audioOpen = !_audioOpen;
-                    _metronomeOpen = false;
-                  }),
-                ),
-                IconButton(
-                  tooltip: 'Annotate',
-                  icon: const Icon(Icons.draw_outlined),
-                  onPressed: () => _setAnnotating(true),
-                ),
-                IconButton(
-                  tooltip: 'Metronome',
-                  isSelected: _metronomeOpen,
-                  icon: const MetronomeIcon(),
-                  onPressed: () => setState(() {
-                    _metronomeOpen = !_metronomeOpen;
-                    _audioOpen = false;
-                  }),
-                ),
-                PopupMenuButton<String>(
-                  tooltip: 'View options',
-                  icon: const Icon(Icons.chrome_reader_mode_outlined),
-                  onSelected: (v) {
-                    switch (v) {
-                      case 'two':
-                        notifier.set((s) => s.copyWith(twoPageLandscape: !s.twoPageLandscape));
-                      case 'half':
-                        notifier.set((s) => s.copyWith(halfPageTurn: !s.halfPageTurn));
-                        setState(() => _half = false);
-                      default:
-                        notifier.set((s) => s.copyWith(pageTint: PageTint.values.byName(v)));
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    CheckedPopupMenuItem(
-                      value: 'two',
-                      checked: settings.twoPageLandscape,
-                      child: const Text('Two pages in landscape'),
-                    ),
-                    CheckedPopupMenuItem(
-                      value: 'half',
-                      checked: settings.halfPageTurn,
-                      child: const Text('Half-page turns'),
-                    ),
-                    const PopupMenuDivider(),
-                    for (final t in PageTint.values)
-                      CheckedPopupMenuItem(
-                        value: t.name,
-                        checked: settings.pageTint == t,
-                        child: Text('${t.label} page'),
-                      ),
-                  ],
-                ),
-                IconButton(
-                  tooltip: 'Share PDF',
-                  icon: const Icon(Icons.ios_share),
-                  onPressed: () async {
-                    await _store.flush();
-                    if (mounted) await exportSongs(context, ref, [current], current.title);
-                  },
-                ),
-                IconButton(
-                  tooltip: 'Edit details',
-                  icon: const Icon(Icons.info_outline),
-                  onPressed: () => editSong(context, ref, current),
-                ),
-                if (widget.args.isSetlist)
-                  IconButton(
-                    tooltip: 'Songs',
-                    icon: const Icon(Icons.format_list_numbered),
-                    onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-                  ),
-              ],
+                ],
+              ),
+              child: toolbar,
+            )
+          : Material(
+              color: Theme.of(context).colorScheme.surface
+                  .withValues(alpha: 0.96),
+              elevation: 3,
+              child: toolbar,
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -1058,24 +1337,48 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       bottom: _chrome ? 0 : -(bottom + 140),
       left: 0,
       right: 0,
-      child: Material(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
-        elevation: 3,
-        child: Padding(
-          padding: EdgeInsets.only(bottom: bottom, top: 8),
-          child: _ScrubberStrip(
-            controller: _scrubber,
-            count: _flat.length,
-            current: _units[_unit],
-            songStarts: _offsets.toSet(),
-            labelOf: (flat) => '${_flat[flat].page + 1}',
-            builder: (flat) => _thumb(flat),
-            onTap: (flat) {
-              _goToFlat(flat);
-            },
-          ),
-        ),
-      ),
+      child: usesCupertinoPresentation
+          ? Container(
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemBackground.resolveFrom(context),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x26000000),
+                    blurRadius: 12,
+                    offset: Offset(0, -3),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: EdgeInsets.only(bottom: bottom, top: 8),
+                child: _ScrubberStrip(
+                  controller: _scrubber,
+                  count: _flat.length,
+                  current: _units[_unit],
+                  songStarts: _offsets.toSet(),
+                  labelOf: (flat) => '${_flat[flat].page + 1}',
+                  builder: (flat) => _thumb(flat),
+                  onTap: _goToFlat,
+                ),
+              ),
+            )
+          : Material(
+              color: Theme.of(context).colorScheme.surface
+                  .withValues(alpha: 0.96),
+              elevation: 3,
+              child: Padding(
+                padding: EdgeInsets.only(bottom: bottom, top: 8),
+                child: _ScrubberStrip(
+                  controller: _scrubber,
+                  count: _flat.length,
+                  current: _units[_unit],
+                  songStarts: _offsets.toSet(),
+                  labelOf: (flat) => '${_flat[flat].page + 1}',
+                  builder: (flat) => _thumb(flat),
+                  onTap: _goToFlat,
+                ),
+              ),
+            ),
     );
   }
 
@@ -1087,10 +1390,48 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
     if (doc == null) {
       return FutureBuilder(
         future: _docs.load(path),
-        builder: (context, snap) => snap.hasData ? _thumb(flat) : const ColoredBox(color: Colors.white),
+        builder: (context, snap) =>
+            snap.hasData ? _thumb(flat) : const ColoredBox(color: Colors.white),
       );
     }
-    return PdfPageImage(doc: doc, docKey: song.fileName, page: r.page, quality: 1);
+    return PdfPageImage(
+      doc: doc,
+      docKey: song.fileName,
+      page: r.page,
+      quality: 1,
+    );
+  }
+
+  void _showSongPicker() {
+    if (!usesCupertinoPresentation) {
+      _scaffoldKey.currentState?.openEndDrawer();
+      return;
+    }
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (sheetContext) => CupertinoActionSheet(
+        title: Text(widget.args.setlistName ?? 'Songs'),
+        actions: [
+          for (var i = 0; i < _songs!.length; i++)
+            CupertinoActionSheetAction(
+              isDefaultAction: i == _flat[_currentFlat].song,
+              onPressed: () {
+                Navigator.pop(sheetContext);
+                _goToFlat(_offsets[i]);
+              },
+              child: Text(
+                '${i + 1}. ${_songs![i].title}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(sheetContext),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
   }
 
   Widget _songDrawer(List<Song> songs) {
@@ -1102,7 +1443,10 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Text(widget.args.setlistName ?? '', style: Theme.of(context).textTheme.titleLarge),
+              child: Text(
+                widget.args.setlistName ?? '',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
             Expanded(
               child: ListView.builder(
@@ -1111,7 +1455,13 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
                   final s = ref.read(songByIdProvider)[songs[i].id] ?? songs[i];
                   return ListTile(
                     selected: i == currentSong,
-                    leading: CircleAvatar(radius: 14, child: Text('${i + 1}', style: const TextStyle(fontSize: 12))),
+                    leading: CircleAvatar(
+                      radius: 14,
+                      child: Text(
+                        '${i + 1}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
                     title: Text(s.title),
                     subtitle: Text('${s.pageCount} pages'),
                     onTap: () {
@@ -1166,7 +1516,11 @@ class _ScrubberStrip extends StatelessWidget {
           return GestureDetector(
             onTap: () => onTap(i),
             child: Padding(
-              padding: EdgeInsets.only(left: songStarts.contains(i) && i > 0 ? 10 : 4, right: 4, bottom: 4),
+              padding: EdgeInsets.only(
+                left: songStarts.contains(i) && i > 0 ? 10 : 4,
+                right: 4,
+                bottom: 4,
+              ),
               child: Column(
                 children: [
                   Expanded(
@@ -1174,12 +1528,17 @@ class _ScrubberStrip extends StatelessWidget {
                       duration: const Duration(milliseconds: 150),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: active ? scheme.primary : scheme.outlineVariant,
+                          color: active
+                              ? scheme.primary
+                              : scheme.outlineVariant,
                           width: active ? 3 : 1,
                         ),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: ClipRRect(borderRadius: BorderRadius.circular(4), child: builder(i)),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: builder(i),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),

@@ -5,12 +5,12 @@ import 'package:super_sliver_list/super_sliver_list.dart';
 import '../core/sorting.dart';
 import '../data/db.dart';
 import 'metadata_widgets.dart';
+import 'platform_widgets.dart';
 
 const _headerColor = Color(0xFF575757);
 const _railWidth = 44.0;
 
-/// Song list in the style of the A–Z screenshot: grey section bars, two-line rows
-/// and a black letter rail on the right. Non-alphabetical sorts show a plain list.
+/// Song list with themed section headers and a letter rail for indexed sorts.
 class SongList extends StatefulWidget {
   const SongList({
     super.key,
@@ -92,23 +92,30 @@ class _SongListState extends State<SongList> {
       itemBuilder: (context, i) => switch (entries[i]) {
         HeaderEntry(:final letter) => _SectionHeader(letter),
         SongEntry(:final song) => _SongRow(
-            song: song,
-            subtitle: song.composer,
-            selected: widget.selected.contains(song.id),
-            selectionMode: widget.selectionMode ?? widget.selected.isNotEmpty,
-            highlighted: song.id == widget.highlightId,
-            tags: widget.tagsOf?.call(song) ?? const [],
-            trailing: widget.trailingBuilder?.call(song),
-            onTap: () => widget.onTap(song),
-            onLongPress: widget.onLongPress == null ? null : () => widget.onLongPress!(song),
-          ),
+          song: song,
+          subtitle: song.composer,
+          selected: widget.selected.contains(song.id),
+          selectionMode: widget.selectionMode ?? widget.selected.isNotEmpty,
+          highlighted: song.id == widget.highlightId,
+          tags: widget.tagsOf?.call(song) ?? const [],
+          trailing: widget.trailingBuilder?.call(song),
+          onTap: () => widget.onTap(song),
+          onLongPress: widget.onLongPress == null
+              ? null
+              : () => widget.onLongPress!(song),
+        ),
       },
     );
     if (!showRail) return Scrollbar(controller: _scroll, child: list);
-    return Row(children: [
-      Expanded(child: list),
-      LetterRail(letters: _indexed.sectionStart.keys.toList(), onLetter: _jumpTo),
-    ]);
+    return Row(
+      children: [
+        Expanded(child: list),
+        LetterRail(
+          letters: _indexed.sectionStart.keys.toList(),
+          onLetter: _jumpTo,
+        ),
+      ],
+    );
   }
 }
 
@@ -118,13 +125,22 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cupertino = usesCupertinoPresentation;
     return Container(
       height: 30,
-      color: _headerColor,
+      color: cupertino ? theme.colorScheme.surfaceContainerHigh : _headerColor,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       alignment: Alignment.centerLeft,
-      child: Text(letter,
-          style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+      child: Text(
+        letter,
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: cupertino ? theme.colorScheme.onSurface : Colors.white,
+          fontSize: cupertino ? null : 17,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
+        ),
+      ),
     );
   }
 }
@@ -159,8 +175,8 @@ class _SongRow extends StatelessWidget {
     final bg = selected
         ? scheme.primaryContainer
         : highlighted
-            ? scheme.surfaceContainerHighest
-            : scheme.surface;
+        ? scheme.surfaceContainerHighest
+        : scheme.surface;
     return Material(
       color: bg,
       child: InkWell(
@@ -168,48 +184,76 @@ class _SongRow extends StatelessWidget {
         onLongPress: onLongPress,
         child: Container(
           constraints: const BoxConstraints(minHeight: 72),
-          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: scheme.outlineVariant, width: 0.6))),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: scheme.outlineVariant, width: 0.6),
+            ),
+          ),
           padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
-          child: Row(children: [
-            AnimatedSize(
-              duration: const Duration(milliseconds: 180),
-              child: selectionMode
-                  ? Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: Icon(selected ? Icons.check_circle : Icons.radio_button_unchecked,
-                          color: selected ? scheme.primary : scheme.outline),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-            if (song.coverFileName != null)
-              Padding(padding: const EdgeInsets.only(right: 12), child: CoverImage(song: song, size: 52)),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(song.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: t.textTheme.titleMedium?.copyWith(fontSize: 18, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 2),
-                Row(children: [
-                  Flexible(
-                    child: Text(
-                      [
-                        subtitle.trim().isEmpty ? '-' : subtitle,
-                        if (song.instrument.isNotEmpty) song.instrument,
-                        if (song.musicalKey.isNotEmpty) song.musicalKey,
-                      ].join('  ·  '),
-                      maxLines: 1,
+          child: Row(
+            children: [
+              AnimatedSize(
+                duration: const Duration(milliseconds: 180),
+                child: selectionMode
+                    ? Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Icon(
+                          selected
+                              ? Icons.check_circle
+                              : Icons.radio_button_unchecked,
+                          color: selected ? scheme.primary : scheme.outline,
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              if (song.coverFileName != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: CoverImage(song: song, size: 52),
+                ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      song.title,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: t.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                      style: t.textTheme.titleMedium?.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  ReviewBadge(song: song),
-                  for (final tag in tags.take(4)) ...[const SizedBox(width: 8), TagPill(tag)],
-                ]),
-              ]),
-            ),
-            ?trailing,
-          ]),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            [
+                              subtitle.trim().isEmpty ? '-' : subtitle,
+                              if (song.instrument.isNotEmpty) song.instrument,
+                              if (song.musicalKey.isNotEmpty) song.musicalKey,
+                            ].join('  ·  '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: t.textTheme.bodyMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        ReviewBadge(song: song),
+                        for (final tag in tags.take(4)) ...[
+                          const SizedBox(width: 8),
+                          TagPill(tag),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              ?trailing,
+            ],
+          ),
         ),
       ),
     );
@@ -225,9 +269,18 @@ class TagPill extends StatelessWidget {
     final c = Color(tag.color);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: c.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(20)),
-      child: Text(tag.name,
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: HSLColor.fromColor(c).withLightness(0.35).toColor())),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        tag.name,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: HSLColor.fromColor(c).withLightness(0.35).toColor(),
+        ),
+      ),
     );
   }
 }
@@ -248,7 +301,10 @@ class _LetterRailState extends State<LetterRail> {
   double _bubbleY = 0;
 
   void _handle(Offset local, double cellHeight) {
-    final i = (local.dy / cellHeight).floor().clamp(0, widget.letters.length - 1);
+    final i = (local.dy / cellHeight).floor().clamp(
+      0,
+      widget.letters.length - 1,
+    );
     final letter = widget.letters[i];
     _bubbleY = (i + 0.5) * cellHeight;
     if (letter != _active) {
@@ -264,59 +320,101 @@ class _LetterRailState extends State<LetterRail> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, c) {
-      final cell = (c.maxHeight / widget.letters.length).clamp(18.0, 52.0);
-      final fontSize = (cell * 0.55).clamp(11.0, 26.0);
-      return SizedBox(
-        width: _railWidth,
-        child: Stack(clipBehavior: Clip.none, children: [
-          Positioned.fill(child: const ColoredBox(color: Colors.black)),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: (d) => _handle(d.localPosition, cell),
-            onTapUp: (_) => _end(),
-            onVerticalDragStart: (d) => _handle(d.localPosition, cell),
-            onVerticalDragUpdate: (d) => _handle(d.localPosition, cell),
-            onVerticalDragEnd: (_) => _end(),
-            onVerticalDragCancel: _end,
-            child: SizedBox(
-              height: c.maxHeight,
-              child: Column(children: [
-                for (final l in widget.letters)
-                  Container(
-                    height: cell,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: l == _active ? Colors.white24 : null,
-                      border: const Border(bottom: BorderSide(color: Color(0xFF3A3A3A), width: 1)),
-                    ),
-                    child: Text(l, style: TextStyle(color: Colors.white, fontSize: fontSize)),
-                  ),
-              ]),
-            ),
-          ),
-          if (_active != null)
-            Positioned(
-              right: _railWidth + 12,
-              top: _bubbleY - 36,
-              child: IgnorePointer(
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    shape: BoxShape.circle,
-                    boxShadow: const [BoxShadow(blurRadius: 12, color: Colors.black26)],
-                  ),
-                  child: Text(_active!,
-                      style: TextStyle(
-                          fontSize: 34, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onPrimary)),
+    final scheme = Theme.of(context).colorScheme;
+    final cupertino = usesCupertinoPresentation;
+    return LayoutBuilder(
+      builder: (context, c) {
+        final cell = (c.maxHeight / widget.letters.length).clamp(18.0, 52.0);
+        final fontSize = (cell * 0.55).clamp(11.0, 26.0);
+        return SizedBox(
+          width: _railWidth,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: ColoredBox(
+                  color: cupertino ? scheme.surfaceContainerLow : Colors.black,
                 ),
               ),
-            ),
-        ]),
-      );
-    });
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapDown: (d) => _handle(d.localPosition, cell),
+                onTapUp: (_) => _end(),
+                onVerticalDragStart: (d) => _handle(d.localPosition, cell),
+                onVerticalDragUpdate: (d) => _handle(d.localPosition, cell),
+                onVerticalDragEnd: (_) => _end(),
+                onVerticalDragCancel: _end,
+                child: SizedBox(
+                  height: c.maxHeight,
+                  child: Column(
+                    children: [
+                      for (final l in widget.letters)
+                        Container(
+                          height: cell,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: l != _active
+                                ? null
+                                : cupertino
+                                ? scheme.secondaryContainer
+                                : Colors.white24,
+                            border: cupertino
+                                ? null
+                                : const Border(
+                                    bottom: BorderSide(
+                                      color: Color(0xFF3A3A3A),
+                                    ),
+                                  ),
+                          ),
+                          child: Text(
+                            l,
+                            style: TextStyle(
+                              color: cupertino
+                                  ? l == _active
+                                        ? scheme.onSecondaryContainer
+                                        : scheme.onSurfaceVariant
+                                  : Colors.white,
+                              fontSize: fontSize,
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              if (_active != null)
+                Positioned(
+                  right: _railWidth + 12,
+                  top: _bubbleY - 36,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: const [
+                          BoxShadow(blurRadius: 12, color: Colors.black26),
+                        ],
+                      ),
+                      child: Text(
+                        _active!,
+                        style: TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
